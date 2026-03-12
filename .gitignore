@@ -15,3 +15,6 @@ ios/Pods/
 # IDE
 .idea/
 .vscode/
+
+# MacOS
+.DS_Store
