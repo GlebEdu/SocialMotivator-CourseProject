@@ -1,0 +1,1 @@
+enum BetSide { forGoal, againstGoal }
