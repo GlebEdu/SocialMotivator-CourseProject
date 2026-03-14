@@ -96,7 +96,7 @@ class GoalEngine {
       excludedUserIds: <String>{goal.userId},
     );
 
-    // We reuse draft as an "in review" state until a dedicated review status exists.
+    // Reuse draft as an "in review" state until a dedicated review status exists.
     await _goalsRepository.updateGoal(
       Goal(
         id: goal.id,
