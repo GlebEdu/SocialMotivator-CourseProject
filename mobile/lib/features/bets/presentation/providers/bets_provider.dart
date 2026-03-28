@@ -22,6 +22,8 @@ class PlaceBetController extends AsyncNotifier<void> {
 
     final bet = result.requireValue;
     ref.invalidate(goalsFeedProvider);
+    ref.invalidate(currentUserBetsProvider);
+    ref.invalidate(currentUserPredictedGoalIdsProvider);
     ref.invalidate(goalDetailsProvider(input.goalId));
 
     return bet;

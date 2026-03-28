@@ -9,9 +9,9 @@ import '../../features/goals/domain/entities/goal_status.dart';
 import '../../features/profile/domain/entities/user.dart';
 
 class FakeDatabase {
-  FakeDatabase._internal();
+  //FakeDatabase._internal();
   //Test data
-  /*FakeDatabase._internal() {
+  FakeDatabase._internal() {
     users.addAll(_seedUsers);
     goals.addAll(_seedGoals);
     bets.addAll(_seedBets);
@@ -19,7 +19,7 @@ class FakeDatabase {
     arbitrationCases.addAll(_seedArbitrationCases);
     votes.addAll(_seedVotes);
     currentUserId = _currentUserId;
-  }*/
+  }
 
   static final FakeDatabase _instance = FakeDatabase._internal();
 
@@ -37,7 +37,7 @@ class FakeDatabase {
 
   String? currentUserId;
 
-  static const String _currentUserId = 'user_max';
+  static const String _currentUserId = 'user_nina';
 
   static final Map<String, User> _seedUsers = <String, User>{
     'user_alice': const User(

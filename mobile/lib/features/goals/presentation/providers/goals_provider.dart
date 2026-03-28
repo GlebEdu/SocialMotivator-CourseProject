@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../bets/domain/entities/bet.dart';
 import '../../../../shared/providers/repository_providers.dart';
 import '../../domain/entities/create_goal_input.dart';
 import '../../domain/entities/evidence.dart';
@@ -8,6 +10,59 @@ import '../../domain/entities/goal.dart';
 final goalsFeedProvider = FutureProvider<List<Goal>>((ref) {
   return ref.watch(goalsRepositoryProvider).getGoalsFeed();
 });
+
+final myGoalsProvider = FutureProvider<List<Goal>>((ref) async {
+  final currentUser = await ref.watch(authControllerProvider.future);
+  if (currentUser == null) {
+    return const <Goal>[];
+  }
+
+  final goals = await ref.watch(goalsFeedProvider.future);
+  return goals
+      .where((goal) => goal.userId == currentUser.id)
+      .toList(growable: false);
+});
+
+final currentUserBetsProvider = FutureProvider<List<Bet>>((ref) async {
+  final currentUser = await ref.watch(authControllerProvider.future);
+  if (currentUser == null) {
+    return const <Bet>[];
+  }
+
+  return ref.watch(betsRepositoryProvider).getBetsForUser(currentUser.id);
+});
+
+final currentUserPredictedGoalIdsProvider = FutureProvider<Set<String>>((
+  ref,
+) async {
+  final bets = await ref.watch(currentUserBetsProvider.future);
+  return bets.map((bet) => bet.goalId).toSet();
+});
+
+final discoverGoalsProvider =
+    FutureProvider.family<List<DiscoverGoalListItem>, DiscoverGoalsFilter>((
+      ref,
+      filter,
+    ) async {
+      final currentUser = await ref.watch(authControllerProvider.future);
+      final goals = await ref.watch(goalsFeedProvider.future);
+      final predictedGoalIds = await ref.watch(
+        currentUserPredictedGoalIdsProvider.future,
+      );
+
+      final discoverGoals = goals
+          .where((goal) => goal.userId != currentUser?.id)
+          .map(
+            (goal) => DiscoverGoalListItem(
+              goal: goal,
+              hasPrediction: predictedGoalIds.contains(goal.id),
+            ),
+          )
+          .where((item) => filter.matches(item))
+          .toList(growable: false);
+
+      return discoverGoals;
+    });
 
 final goalDetailsProvider = FutureProvider.family<Goal?, String>((ref, goalId) {
   return ref.watch(goalsRepositoryProvider).getGoalById(goalId);
@@ -59,4 +114,23 @@ class SubmitEvidenceController extends AsyncNotifier<void> {
 
     return savedEvidence;
   }
+}
+
+enum DiscoverGoalsFilter { all, predicted, newOnly }
+
+extension DiscoverGoalsFilterX on DiscoverGoalsFilter {
+  bool matches(DiscoverGoalListItem item) {
+    return switch (this) {
+      DiscoverGoalsFilter.all => true,
+      DiscoverGoalsFilter.predicted => item.hasPrediction,
+      DiscoverGoalsFilter.newOnly => !item.hasPrediction,
+    };
+  }
+}
+
+class DiscoverGoalListItem {
+  const DiscoverGoalListItem({required this.goal, required this.hasPrediction});
+
+  final Goal goal;
+  final bool hasPrediction;
 }

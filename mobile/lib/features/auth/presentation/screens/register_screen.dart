@@ -32,7 +32,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       next.whenOrNull(
         data: (_) {
           if (ref.read(currentAuthenticatedUserProvider) != null) {
-            context.go('/home');
+            context.go('/my-goals');
           }
         },
         error: (error, _) {

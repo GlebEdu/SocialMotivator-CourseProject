@@ -25,7 +25,7 @@ class ArbitrationCaseScreen extends ConsumerWidget {
             if (Navigator.of(context).canPop()) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/arbitration');
             }
           },
         ),

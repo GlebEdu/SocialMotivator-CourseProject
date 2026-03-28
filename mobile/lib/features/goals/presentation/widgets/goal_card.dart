@@ -4,10 +4,16 @@ import '../../domain/entities/goal.dart';
 import '../../domain/entities/goal_status.dart';
 
 class GoalCard extends StatelessWidget {
-  const GoalCard({required this.goal, this.onTap, super.key});
+  const GoalCard({
+    required this.goal,
+    this.onTap,
+    this.badges = const <GoalCardBadge>[],
+    super.key,
+  });
 
   final Goal goal;
   final VoidCallback? onTap;
+  final List<GoalCardBadge> badges;
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +50,16 @@ class GoalCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              if (badges.isNotEmpty) ...<Widget>[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: badges
+                      .map((badge) => _GoalCardBadgeChip(badge: badge))
+                      .toList(growable: false),
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: <Widget>[
@@ -69,6 +85,20 @@ class GoalCard extends StatelessWidget {
     final day = value.day.toString().padLeft(2, '0');
     return '${value.year}-$month-$day';
   }
+}
+
+class GoalCardBadge {
+  const GoalCardBadge({
+    required this.label,
+    this.icon,
+    this.backgroundColor,
+    this.foregroundColor,
+  });
+
+  final String label;
+  final IconData? icon;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 }
 
 class _GoalStatusChip extends StatelessWidget {
@@ -125,5 +155,44 @@ class _GoalStatusChip extends StatelessWidget {
       case GoalStatus.cancelled:
         return 'Cancelled';
     }
+  }
+}
+
+class _GoalCardBadgeChip extends StatelessWidget {
+  const _GoalCardBadgeChip({required this.badge});
+
+  final GoalCardBadge badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final backgroundColor =
+        badge.backgroundColor ?? colorScheme.tertiaryContainer;
+    final foregroundColor =
+        badge.foregroundColor ?? colorScheme.onTertiaryContainer;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (badge.icon != null) ...<Widget>[
+            Icon(badge.icon, size: 14, color: foregroundColor),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            badge.label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: foregroundColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

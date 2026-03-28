@@ -1,55 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../arbitration/presentation/screens/arbitration_list_screen.dart';
-import '../../../goals/presentation/screens/goals_feed_screen.dart';
-import '../../../profile/presentation/screens/profile_screen.dart';
+class HomeShell extends StatelessWidget {
+  const HomeShell({required this.currentTab, required this.child, super.key});
 
-class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
-
-  @override
-  State<HomeShell> createState() => _HomeShellState();
-}
-
-class _HomeShellState extends State<HomeShell> {
-  int _currentIndex = 0;
-
-  static const _tabs = <_HomeTab>[
-    _HomeTab(
-      label: 'Goals',
-      icon: Icons.flag_outlined,
-      title: 'Goals',
-      body: GoalsFeedScreen(),
-    ),
-    _HomeTab(
-      label: 'Arbitration',
-      icon: Icons.balance_outlined,
-      title: 'Arbitration',
-      body: ArbitrationListScreen(),
-    ),
-    _HomeTab(
-      label: 'Profile',
-      icon: Icons.person_outline,
-      title: 'Profile',
-      body: ProfileScreen(),
-    ),
-  ];
+  final HomeTabItem currentTab;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final selectedTab = _tabs[_currentIndex];
+    final currentIndex = homeTabs.indexWhere((tab) => tab.item == currentTab);
+    final selectedTab = homeTabs[currentIndex];
 
     return Scaffold(
       appBar: AppBar(title: Text(selectedTab.title)),
-      body: selectedTab.body,
+      body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: _tabs
+        selectedIndex: currentIndex,
+        onDestinationSelected: (index) => context.go(homeTabs[index].route),
+        destinations: homeTabs
             .map(
               (tab) =>
                   NavigationDestination(icon: Icon(tab.icon), label: tab.label),
@@ -60,16 +29,51 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-class _HomeTab {
-  const _HomeTab({
+const homeTabs = <HomeTab>[
+  HomeTab(
+    item: HomeTabItem.myGoals,
+    route: '/my-goals',
+    label: 'My Goals',
+    icon: Icons.flag_outlined,
+    title: 'My Goals',
+  ),
+  HomeTab(
+    item: HomeTabItem.discover,
+    route: '/discover',
+    label: 'Discover',
+    icon: Icons.explore_outlined,
+    title: 'Discover',
+  ),
+  HomeTab(
+    item: HomeTabItem.arbitration,
+    route: '/arbitration',
+    label: 'Arbitration',
+    icon: Icons.balance_outlined,
+    title: 'Arbitration',
+  ),
+  HomeTab(
+    item: HomeTabItem.profile,
+    route: '/profile',
+    label: 'Profile',
+    icon: Icons.person_outline,
+    title: 'Profile',
+  ),
+];
+
+class HomeTab {
+  const HomeTab({
+    required this.item,
+    required this.route,
     required this.label,
     required this.icon,
     required this.title,
-    required this.body,
   });
 
+  final HomeTabItem item;
+  final String route;
   final String label;
   final IconData icon;
   final String title;
-  final Widget body;
 }
+
+enum HomeTabItem { myGoals, discover, arbitration, profile }

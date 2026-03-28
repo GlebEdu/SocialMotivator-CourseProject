@@ -5,27 +5,28 @@ import 'package:go_router/go_router.dart';
 import '../providers/goals_provider.dart';
 import '../widgets/goal_card.dart';
 
-class GoalsFeedScreen extends ConsumerWidget {
-  const GoalsFeedScreen({super.key});
+class MyGoalsScreen extends ConsumerWidget {
+  const MyGoalsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final goalsFeed = ref.watch(goalsFeedProvider);
+    final myGoals = ref.watch(myGoalsProvider);
 
     return Stack(
       children: <Widget>[
-        goalsFeed.when(
+        myGoals.when(
           data: (goals) {
             if (goals.isEmpty) {
               return const _GoalsFeedMessage(
                 icon: Icons.flag_outlined,
                 title: 'No goals yet',
-                description: 'Created goals will appear here.',
+                description:
+                    'Create your first goal to start tracking progress.',
               );
             }
 
             return RefreshIndicator(
-              onRefresh: () => ref.refresh(goalsFeedProvider.future),
+              onRefresh: () => ref.refresh(myGoalsProvider.future),
               child: ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 itemCount: goals.length,
@@ -43,7 +44,7 @@ class GoalsFeedScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _GoalsFeedMessage(
             icon: Icons.error_outline,
-            title: 'Could not load goals',
+            title: 'Could not load your goals',
             description: error.toString(),
           ),
         ),
@@ -51,7 +52,7 @@ class GoalsFeedScreen extends ConsumerWidget {
           right: 16,
           bottom: 16,
           child: FloatingActionButton.extended(
-            onPressed: () => context.push('/goals/create'),
+            onPressed: () => context.push('/my-goals/create'),
             icon: const Icon(Icons.add),
             label: const Text('Create'),
           ),

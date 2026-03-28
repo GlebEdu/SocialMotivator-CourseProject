@@ -53,7 +53,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
             if (Navigator.of(context).canPop()) {
               context.pop();
             } else {
-              context.go('/home');
+              context.go('/my-goals');
             }
           },
         ),
@@ -159,7 +159,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         return;
       }
 
-      context.go('/home');
+      context.go('/my-goals');
     } catch (_) {
       // Error feedback is handled by the provider listener above.
     }

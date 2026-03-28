@@ -30,7 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       next.whenOrNull(
         data: (_) {
           if (ref.read(currentAuthenticatedUserProvider) != null) {
-            context.go('/home');
+            context.go('/my-goals');
           }
         },
         error: (error, _) {
