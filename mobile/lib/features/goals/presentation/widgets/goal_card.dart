@@ -108,22 +108,12 @@ class _GoalStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     final (backgroundColor, foregroundColor) = switch (status) {
-      GoalStatus.draft => (
-        colorScheme.secondaryContainer,
-        colorScheme.onSecondaryContainer,
-      ),
-      GoalStatus.active => (
-        colorScheme.primaryContainer,
-        colorScheme.onPrimaryContainer,
-      ),
-      GoalStatus.completed => (Colors.green.shade100, Colors.green.shade900),
+      GoalStatus.draft => (Colors.amber.shade100, Colors.amber.shade900),
+      GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
+      GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
       GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
-      GoalStatus.cancelled => (
-        colorScheme.surfaceContainerHighest,
-        colorScheme.onSurfaceVariant,
-      ),
+      GoalStatus.cancelled => (Colors.grey.shade200, Colors.grey.shade700),
     };
 
     return Container(
@@ -165,11 +155,8 @@ class _GoalCardBadgeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final backgroundColor =
-        badge.backgroundColor ?? colorScheme.tertiaryContainer;
-    final foregroundColor =
-        badge.foregroundColor ?? colorScheme.onTertiaryContainer;
+    final backgroundColor = badge.backgroundColor ?? Colors.blue.shade100;
+    final foregroundColor = badge.foregroundColor ?? Colors.blue.shade900;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

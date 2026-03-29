@@ -37,7 +37,7 @@ class FakeDatabase {
 
   String? currentUserId;
 
-  static const String _currentUserId = 'user_nina';
+  static const String _currentUserId = 'user_alice';
 
   static final Map<String, User> _seedUsers = <String, User>{
     'user_alice': const User(

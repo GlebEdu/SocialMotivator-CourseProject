@@ -11,6 +11,7 @@ import '../features/goals/presentation/screens/discover_screen.dart';
 import '../features/goals/presentation/screens/goal_details_screen.dart';
 import '../features/goals/presentation/screens/my_goals_screen.dart';
 import '../features/goals/presentation/screens/upload_evidence_screen.dart';
+import '../features/profile/presentation/screens/author_profile_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -68,6 +69,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final goalId = state.pathParameters['id']!;
           return GoalDetailsScreen(goalId: goalId);
+        },
+      ),
+      GoRoute(
+        path: '/users/:id',
+        builder: (context, state) {
+          final userId = state.pathParameters['id']!;
+          return AuthorProfileScreen(userId: userId);
         },
       ),
       GoRoute(

@@ -6,6 +6,7 @@ import '../../../../shared/providers/repository_providers.dart';
 import '../../domain/entities/create_goal_input.dart';
 import '../../domain/entities/evidence.dart';
 import '../../domain/entities/goal.dart';
+import '../../domain/entities/goal_status.dart';
 
 final goalsFeedProvider = FutureProvider<List<Goal>>((ref) {
   return ref.watch(goalsRepositoryProvider).getGoalsFeed();
@@ -52,6 +53,7 @@ final discoverGoalsProvider =
 
       final discoverGoals = goals
           .where((goal) => goal.userId != currentUser?.id)
+          .where((goal) => goal.status != GoalStatus.completed)
           .map(
             (goal) => DiscoverGoalListItem(
               goal: goal,
@@ -123,7 +125,8 @@ extension DiscoverGoalsFilterX on DiscoverGoalsFilter {
     return switch (this) {
       DiscoverGoalsFilter.all => true,
       DiscoverGoalsFilter.predicted => item.hasPrediction,
-      DiscoverGoalsFilter.newOnly => !item.hasPrediction,
+      DiscoverGoalsFilter.newOnly =>
+        !item.hasPrediction && item.goal.status == GoalStatus.active,
     };
   }
 }

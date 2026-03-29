@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../bets/presentation/providers/bets_provider.dart';
 import '../../../bets/presentation/widgets/bet_panel.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../domain/entities/goal.dart';
 import '../../domain/entities/goal_status.dart';
 import '../providers/goals_provider.dart';
@@ -42,6 +44,12 @@ class GoalDetailsScreen extends ConsumerWidget {
             );
           }
 
+          final showAuthorSummary =
+              currentUser == null || currentUser.id != goal.userId;
+          final authorSummary = showAuthorSummary
+              ? ref.watch(userGoalSummaryProvider(goal.userId))
+              : const AsyncData<UserGoalSummary?>(null);
+          final betSummary = ref.watch(goalBetSummaryProvider(goal.id));
           final showBetPanel =
               currentUser == null || currentUser.id != goal.userId;
           final canSubmitEvidence =
@@ -51,6 +59,8 @@ class GoalDetailsScreen extends ConsumerWidget {
 
           return _GoalDetailsBody(
             goal: goal,
+            authorSummary: authorSummary,
+            betSummary: betSummary,
             showBetPanel: showBetPanel,
             canSubmitEvidence: canSubmitEvidence,
           );
@@ -69,11 +79,15 @@ class GoalDetailsScreen extends ConsumerWidget {
 class _GoalDetailsBody extends StatelessWidget {
   const _GoalDetailsBody({
     required this.goal,
+    required this.authorSummary,
+    required this.betSummary,
     required this.showBetPanel,
     required this.canSubmitEvidence,
   });
 
   final Goal goal;
+  final AsyncValue<UserGoalSummary?> authorSummary;
+  final AsyncValue<GoalBetSummary> betSummary;
   final bool showBetPanel;
   final bool canSubmitEvidence;
 
@@ -90,6 +104,8 @@ class _GoalDetailsBody extends StatelessWidget {
         const SizedBox(height: 12),
         _GoalStatusBanner(status: goal.status),
         const SizedBox(height: 16),
+        _AuthorSummaryCard(authorSummary: authorSummary),
+        const SizedBox(height: 16),
         Text(goal.description, style: Theme.of(context).textTheme.bodyLarge),
         const SizedBox(height: 24),
         Card(
@@ -99,6 +115,8 @@ class _GoalDetailsBody extends StatelessWidget {
             subtitle: Text(deadlineText),
           ),
         ),
+        const SizedBox(height: 16),
+        _GoalBetSummaryCard(betSummary: betSummary),
         if (canSubmitEvidence) ...<Widget>[
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -122,6 +140,303 @@ class _GoalDetailsBody extends StatelessWidget {
   }
 }
 
+class _GoalBetSummaryCard extends StatelessWidget {
+  const _GoalBetSummaryCard({required this.betSummary});
+
+  final AsyncValue<GoalBetSummary> betSummary;
+
+  @override
+  Widget build(BuildContext context) {
+    return betSummary.when(
+      data: (summary) {
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Bet Activity',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - 12) / 2;
+
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: <Widget>[
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'Total pool',
+                            value:
+                                '${summary.totalPool.toStringAsFixed(0)} Coins',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'Bets placed',
+                            value: summary.goalBets.length.toString(),
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'For goal',
+                            value:
+                                '${summary.forPool.toStringAsFixed(0)} Coins',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'Against goal',
+                            value:
+                                '${summary.againstPool.toStringAsFixed(0)} Coins',
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (summary.hasCurrentUserBet)
+                  _CurrentUserBetSummary(summary: summary)
+                else
+                  Text(
+                    'You have not placed a bet on this goal yet.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Expanded(child: Text('Loading bet activity...')),
+            ],
+          ),
+        ),
+      ),
+      error: (error, _) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Could not load bet activity: $error'),
+        ),
+      ),
+    );
+  }
+}
+
+class _CurrentUserBetSummary extends StatelessWidget {
+  const _CurrentUserBetSummary({required this.summary});
+
+  final GoalBetSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final predictionLabel = summary.isCurrentUserOnlyFor
+        ? 'You are betting for this goal'
+        : summary.isCurrentUserOnlyAgainst
+        ? 'You are betting against this goal'
+        : 'You have bets on both sides';
+
+    final detailLabel = summary.isCurrentUserOnlyFor
+        ? '${summary.currentUserTotal.toStringAsFixed(0)} Coins on For'
+        : summary.isCurrentUserOnlyAgainst
+        ? '${summary.currentUserTotal.toStringAsFixed(0)} Coins on Against'
+        : 'For ${summary.currentUserForTotal.toStringAsFixed(0)} Coins, '
+              'Against ${summary.currentUserAgainstTotal.toStringAsFixed(0)} Coins';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            predictionLabel,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            detailLabel,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuthorSummaryCard extends StatelessWidget {
+  const _AuthorSummaryCard({required this.authorSummary});
+
+  final AsyncValue<UserGoalSummary?> authorSummary;
+
+  @override
+  Widget build(BuildContext context) {
+    return authorSummary.when(
+      data: (summary) {
+        if (summary == null) {
+          return const SizedBox.shrink();
+        }
+
+        final initial = summary.user.displayName.isEmpty
+            ? '?'
+            : summary.user.displayName[0].toUpperCase();
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Author', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    CircleAvatar(child: Text(initial)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            summary.user.displayName,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Rating ${summary.user.rating}',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = (constraints.maxWidth - 12) / 2;
+
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: <Widget>[
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'Completed',
+                            value:
+                                '${summary.completedGoals}/${summary.totalGoals} goals',
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _AuthorStatCard(
+                            label: 'Active goals',
+                            value: summary.activeGoals.toString(),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Completion rate: ${summary.completionRateLabel}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => context.push('/users/${summary.user.id}'),
+                    icon: const Icon(Icons.person_outline),
+                    label: const Text('View profile'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      loading: () => const Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Expanded(child: Text('Loading author context...')),
+            ],
+          ),
+        ),
+      ),
+      error: (error, _) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Could not load author context: $error'),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthorStatCard extends StatelessWidget {
+  const _AuthorStatCard({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(value, style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
 class _GoalStatusBanner extends StatelessWidget {
   const _GoalStatusBanner({required this.status});
 
@@ -129,9 +444,25 @@ class _GoalStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final (backgroundColor, foregroundColor) = switch (status) {
+      GoalStatus.draft => (Colors.amber.shade100, Colors.amber.shade900),
+      GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
+      GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
+      GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
+      GoalStatus.cancelled => (Colors.grey.shade200, Colors.grey.shade700),
+    };
+
     return Chip(
+      backgroundColor: backgroundColor,
       avatar: const Icon(Icons.flag_outlined, size: 18),
-      label: Text(_labelForStatus(status)),
+      label: Text(
+        _labelForStatus(status),
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: foregroundColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      iconTheme: IconThemeData(color: foregroundColor),
     );
   }
 

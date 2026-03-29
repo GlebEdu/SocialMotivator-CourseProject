@@ -83,7 +83,7 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
           TextField(
             controller: _descriptionController,
             textCapitalization: TextCapitalization.sentences,
-            minLines: 4,
+            minLines: 1,
             maxLines: 6,
             decoration: const InputDecoration(
               labelText: 'Evidence description',
