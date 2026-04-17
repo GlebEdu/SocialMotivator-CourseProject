@@ -8,8 +8,16 @@ import '../../domain/entities/evidence.dart';
 import '../../domain/entities/goal.dart';
 import '../../domain/entities/goal_status.dart';
 
-final goalsFeedProvider = FutureProvider<List<Goal>>((ref) {
+final goalsFeedProvider = FutureProvider<List<Goal>>((ref) async {
+  await ref.read(goalEngineProvider).syncExpiredGoalsForArbitration();
   return ref.watch(goalsRepositoryProvider).getGoalsFeed();
+});
+
+final goalEvidenceProvider = FutureProvider.family<Evidence?, String>((
+  ref,
+  goalId,
+) {
+  return ref.watch(goalsRepositoryProvider).getLatestEvidenceForGoal(goalId);
 });
 
 final myGoalsProvider = FutureProvider<List<Goal>>((ref) async {
@@ -66,7 +74,11 @@ final discoverGoalsProvider =
       return discoverGoals;
     });
 
-final goalDetailsProvider = FutureProvider.family<Goal?, String>((ref, goalId) {
+final goalDetailsProvider = FutureProvider.family<Goal?, String>((
+  ref,
+  goalId,
+) async {
+  await ref.read(goalEngineProvider).syncExpiredGoalsForArbitration();
   return ref.watch(goalsRepositoryProvider).getGoalById(goalId);
 });
 
@@ -91,6 +103,7 @@ class CreateGoalController extends AsyncNotifier<void> {
     state = result.whenData((_) {});
 
     final goal = result.requireValue;
+    await ref.read(authControllerProvider.notifier).refreshCurrentUser();
     ref.invalidate(goalsFeedProvider);
     ref.invalidate(goalDetailsProvider(goal.id));
 

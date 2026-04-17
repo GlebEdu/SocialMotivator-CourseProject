@@ -37,7 +37,7 @@ class FakeDatabase {
 
   String? currentUserId;
 
-  static const String _currentUserId = 'user_alice';
+  static const String _currentUserId = 'user_nina';
 
   static final Map<String, User> _seedUsers = <String, User>{
     'user_alice': const User(
@@ -67,6 +67,20 @@ class FakeDatabase {
       displayName: 'Leo Kim',
       balance: 1505,
       rating: 1084,
+    ),
+    'user_maya': const User(
+      id: 'user_maya',
+      email: 'maya@habitbet.app',
+      displayName: 'Maya Petrova',
+      balance: 980,
+      rating: 995,
+    ),
+    'user_oliver': const User(
+      id: 'user_oliver',
+      email: 'oliver@habitbet.app',
+      displayName: 'Oliver Chen',
+      balance: 1125,
+      rating: 1008,
     ),
   };
 

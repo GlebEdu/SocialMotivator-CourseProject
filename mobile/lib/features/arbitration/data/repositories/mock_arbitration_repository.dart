@@ -23,6 +23,17 @@ class MockArbitrationRepository implements ArbitrationRepository {
   }
 
   @override
+  Future<ArbitrationCase?> getArbitrationCaseForGoal(String goalId) async {
+    for (final arbitrationCase in _database.arbitrationCases.values) {
+      if (arbitrationCase.goalId == goalId) {
+        return arbitrationCase;
+      }
+    }
+
+    return null;
+  }
+
+  @override
   Future<List<ArbitrationCase>> getArbitrationCases() async {
     return _database.arbitrationCases.values.toList(growable: false);
   }

@@ -11,4 +11,6 @@ abstract class GoalsRepository {
   Future<Goal> updateGoal(Goal goal);
 
   Future<Evidence> submitEvidence(Evidence evidence);
+
+  Future<Evidence?> getLatestEvidenceForGoal(String goalId);
 }

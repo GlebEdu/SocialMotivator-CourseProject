@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bets/presentation/providers/bets_provider.dart';
 import '../../../bets/presentation/widgets/bet_panel.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../profile/presentation/widgets/author_summary_card.dart';
 import '../../domain/entities/goal.dart';
 import '../../domain/entities/goal_status.dart';
 import '../providers/goals_provider.dart';
@@ -104,7 +105,7 @@ class _GoalDetailsBody extends StatelessWidget {
         const SizedBox(height: 12),
         _GoalStatusBanner(status: goal.status),
         const SizedBox(height: 16),
-        _AuthorSummaryCard(authorSummary: authorSummary),
+        AuthorSummaryCard(authorSummary: authorSummary),
         const SizedBox(height: 16),
         Text(goal.description, style: Theme.of(context).textTheme.bodyLarge),
         const SizedBox(height: 24),
@@ -170,7 +171,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                       children: <Widget>[
                         SizedBox(
                           width: itemWidth,
-                          child: _AuthorStatCard(
+                          child: _GoalDetailsMetricCard(
                             label: 'Total pool',
                             value:
                                 '${summary.totalPool.toStringAsFixed(0)} Coins',
@@ -178,14 +179,14 @@ class _GoalBetSummaryCard extends StatelessWidget {
                         ),
                         SizedBox(
                           width: itemWidth,
-                          child: _AuthorStatCard(
+                          child: _GoalDetailsMetricCard(
                             label: 'Bets placed',
                             value: summary.goalBets.length.toString(),
                           ),
                         ),
                         SizedBox(
                           width: itemWidth,
-                          child: _AuthorStatCard(
+                          child: _GoalDetailsMetricCard(
                             label: 'For goal',
                             value:
                                 '${summary.forPool.toStringAsFixed(0)} Coins',
@@ -193,7 +194,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                         ),
                         SizedBox(
                           width: itemWidth,
-                          child: _AuthorStatCard(
+                          child: _GoalDetailsMetricCard(
                             label: 'Against goal',
                             value:
                                 '${summary.againstPool.toStringAsFixed(0)} Coins',
@@ -291,128 +292,8 @@ class _CurrentUserBetSummary extends StatelessWidget {
   }
 }
 
-class _AuthorSummaryCard extends StatelessWidget {
-  const _AuthorSummaryCard({required this.authorSummary});
-
-  final AsyncValue<UserGoalSummary?> authorSummary;
-
-  @override
-  Widget build(BuildContext context) {
-    return authorSummary.when(
-      data: (summary) {
-        if (summary == null) {
-          return const SizedBox.shrink();
-        }
-
-        final initial = summary.user.displayName.isEmpty
-            ? '?'
-            : summary.user.displayName[0].toUpperCase();
-
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Author', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 12),
-                Row(
-                  children: <Widget>[
-                    CircleAvatar(child: Text(initial)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            summary.user.displayName,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Rating ${summary.user.rating}',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final itemWidth = (constraints.maxWidth - 12) / 2;
-
-                    return Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: <Widget>[
-                        SizedBox(
-                          width: itemWidth,
-                          child: _AuthorStatCard(
-                            label: 'Completed',
-                            value:
-                                '${summary.completedGoals}/${summary.totalGoals} goals',
-                          ),
-                        ),
-                        SizedBox(
-                          width: itemWidth,
-                          child: _AuthorStatCard(
-                            label: 'Active goals',
-                            value: summary.activeGoals.toString(),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Completion rate: ${summary.completionRateLabel}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => context.push('/users/${summary.user.id}'),
-                    icon: const Icon(Icons.person_outline),
-                    label: const Text('View profile'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-      loading: () => const Card(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Row(
-            children: <Widget>[
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-              Expanded(child: Text('Loading author context...')),
-            ],
-          ),
-        ),
-      ),
-      error: (error, _) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text('Could not load author context: $error'),
-        ),
-      ),
-    );
-  }
-}
-
-class _AuthorStatCard extends StatelessWidget {
-  const _AuthorStatCard({required this.label, required this.value});
+class _GoalDetailsMetricCard extends StatelessWidget {
+  const _GoalDetailsMetricCard({required this.label, required this.value});
 
   final String label;
   final String value;

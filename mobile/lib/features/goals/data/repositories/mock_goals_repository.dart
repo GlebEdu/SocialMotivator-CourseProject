@@ -26,6 +26,20 @@ class MockGoalsRepository implements GoalsRepository {
   }
 
   @override
+  Future<Evidence?> getLatestEvidenceForGoal(String goalId) async {
+    final matchingEvidence = _database.evidence.values
+        .where((item) => item.goalId == goalId)
+        .toList(growable: false);
+
+    if (matchingEvidence.isEmpty) {
+      return null;
+    }
+
+    matchingEvidence.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return matchingEvidence.first;
+  }
+
+  @override
   Future<Evidence> submitEvidence(Evidence evidence) async {
     _database.evidence[evidence.id] = evidence;
     return evidence;

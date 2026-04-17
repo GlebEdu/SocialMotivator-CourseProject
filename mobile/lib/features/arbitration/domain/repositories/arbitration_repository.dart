@@ -6,6 +6,8 @@ abstract class ArbitrationRepository {
 
   Future<ArbitrationCase?> getArbitrationCaseById(String caseId);
 
+  Future<ArbitrationCase?> getArbitrationCaseForGoal(String goalId);
+
   Future<ArbitrationCase> createArbitrationCase(
     ArbitrationCase arbitrationCase,
   );

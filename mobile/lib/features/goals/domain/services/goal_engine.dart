@@ -76,6 +76,10 @@ class GoalEngine {
       throw StateError('Bets can only be placed on active goals.');
     }
 
+    if (_hasDeadlinePassed(goal.deadline, DateTime.now())) {
+      throw StateError('Bets can only be placed before the deadline.');
+    }
+
     return _placeBetForUser(user: currentUser, input: input);
   }
 
@@ -92,36 +96,29 @@ class GoalEngine {
     }
 
     final savedEvidence = await _goalsRepository.submitEvidence(evidence);
-    final arbitratorUserIds = await _selectArbitratorIds(
-      excludedUserIds: <String>{goal.userId},
-    );
-
-    // Reuse draft as an "in review" state until a dedicated review status exists.
-    await _goalsRepository.updateGoal(
-      Goal(
-        id: goal.id,
-        userId: goal.userId,
-        title: goal.title,
-        description: goal.description,
-        status: GoalStatus.draft,
-        createdAt: goal.createdAt,
-        deadline: goal.deadline,
-      ),
-    );
-
-    await _arbitrationRepository.createArbitrationCase(
-      ArbitrationCase(
-        id: _generateId(),
-        goalId: goal.id,
-        createdByUserId: currentUser.id,
-        arbitratorUserIds: arbitratorUserIds,
-        reason: '${savedEvidence.title}: ${savedEvidence.description}',
-        decision: ArbitrationDecision.pending,
-        createdAt: DateTime.now(),
-      ),
-    );
+    await _ensureArbitrationCaseForDeadline(goal, savedEvidence);
 
     return savedEvidence;
+  }
+
+  Future<void> syncExpiredGoalsForArbitration() async {
+    final goals = await _goalsRepository.getGoalsFeed();
+    for (final goal in goals) {
+      if (goal.status != GoalStatus.active) {
+        continue;
+      }
+
+      if (!_hasDeadlinePassed(goal.deadline, DateTime.now())) {
+        continue;
+      }
+
+      final evidence = await _goalsRepository.getLatestEvidenceForGoal(goal.id);
+      if (evidence == null) {
+        continue;
+      }
+
+      await _ensureArbitrationCaseForGoal(goal: goal, evidence: evidence);
+    }
   }
 
   Future<ArbitrationVote> voteArbitration(ArbitrationVote vote) async {
@@ -393,6 +390,78 @@ class GoalEngine {
     }
 
     return arbitrators;
+  }
+
+  Future<void> _ensureArbitrationCaseForDeadline(
+    Goal goal,
+    Evidence evidence,
+  ) async {
+    if (!_hasDeadlinePassed(goal.deadline, DateTime.now())) {
+      return;
+    }
+
+    await _ensureArbitrationCaseForGoal(goal: goal, evidence: evidence);
+  }
+
+  Future<void> _ensureArbitrationCaseForGoal({
+    required Goal goal,
+    required Evidence evidence,
+  }) async {
+    final existingCase = await _arbitrationRepository.getArbitrationCaseForGoal(
+      goal.id,
+    );
+    if (existingCase != null) {
+      return;
+    }
+
+    final goalBets = await _betsRepository.getBetsForGoal(goal.id);
+    final arbitratorUserIds = await _selectArbitratorIds(
+      excludedUserIds: <String>{
+        goal.userId,
+        ...goalBets.map((bet) => bet.userId),
+      },
+    );
+
+    await _goalsRepository.updateGoal(
+      Goal(
+        id: goal.id,
+        userId: goal.userId,
+        title: goal.title,
+        description: goal.description,
+        status: GoalStatus.draft,
+        createdAt: goal.createdAt,
+        deadline: goal.deadline,
+      ),
+    );
+
+    await _arbitrationRepository.createArbitrationCase(
+      ArbitrationCase(
+        id: _generateId(),
+        goalId: goal.id,
+        createdByUserId: evidence.submittedByUserId,
+        arbitratorUserIds: arbitratorUserIds,
+        reason: '${evidence.title}: ${evidence.description}',
+        decision: ArbitrationDecision.pending,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  bool _hasDeadlinePassed(DateTime? deadline, DateTime now) {
+    if (deadline == null) {
+      return false;
+    }
+
+    final deadlineEnd = DateTime(
+      deadline.year,
+      deadline.month,
+      deadline.day,
+      23,
+      59,
+      59,
+      999,
+    );
+    return now.isAfter(deadlineEnd);
   }
 
   BetSide? _winningSideForStatus(GoalStatus status) {

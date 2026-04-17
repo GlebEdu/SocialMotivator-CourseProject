@@ -42,6 +42,7 @@ class PlaceBetController extends AsyncNotifier<void> {
     state = result.whenData((_) {});
 
     final bet = result.requireValue;
+    await ref.read(authControllerProvider.notifier).refreshCurrentUser();
     ref.invalidate(goalsFeedProvider);
     ref.invalidate(currentUserBetsProvider);
     ref.invalidate(currentUserPredictedGoalIdsProvider);
