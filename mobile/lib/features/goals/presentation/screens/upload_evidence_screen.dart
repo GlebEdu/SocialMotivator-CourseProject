@@ -1,10 +1,13 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/evidence.dart';
+import '../../domain/entities/evidence_attachment.dart';
 import '../providers/goals_provider.dart';
+import '../widgets/evidence_attachment_preview.dart';
 
 class UploadEvidenceScreen extends ConsumerStatefulWidget {
   const UploadEvidenceScreen({required this.goalId, super.key});
@@ -17,13 +20,12 @@ class UploadEvidenceScreen extends ConsumerStatefulWidget {
 }
 
 class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
-  final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  bool _hasAttachment = false;
+  final ImagePicker _picker = ImagePicker();
+  EvidenceAttachment? _attachment;
 
   @override
   void dispose() {
-    _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -53,31 +55,61 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
         padding: const EdgeInsets.all(16),
         children: <Widget>[
           Card(
-            child: ListTile(
-              leading: const Icon(Icons.photo_camera_back_outlined),
-              title: const Text('Photo attachment'),
-              subtitle: Text(
-                _hasAttachment
-                    ? 'Placeholder attachment selected'
-                    : 'No attachment selected',
-              ),
-              trailing: TextButton(
-                onPressed: submitState.isLoading
-                    ? null
-                    : () {
-                        setState(() {
-                          _hasAttachment = !_hasAttachment;
-                        });
-                      },
-                child: Text(_hasAttachment ? 'Remove' : 'Attach'),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Evidence Attachment',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _attachment == null
+                        ? 'Select a photo or video from your device.'
+                        : _attachmentStatus(_attachment!),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 16),
+                  EvidenceAttachmentPreview(
+                    attachment: _attachment,
+                    emptyTitle: 'No attachment selected',
+                    emptyDescription:
+                        'Choose a photo or video to confirm goal completion.',
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: <Widget>[
+                      OutlinedButton.icon(
+                        onPressed: submitState.isLoading ? null : _pickPhoto,
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('Choose Photo'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: submitState.isLoading ? null : _pickVideo,
+                        icon: const Icon(Icons.video_library_outlined),
+                        label: const Text('Choose Video'),
+                      ),
+                      if (_attachment != null)
+                        TextButton.icon(
+                          onPressed: submitState.isLoading
+                              ? null
+                              : () {
+                                  setState(() {
+                                    _attachment = null;
+                                  });
+                                },
+                          icon: const Icon(Icons.close),
+                          label: const Text('Remove'),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Evidence title'),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -86,7 +118,7 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
             minLines: 1,
             maxLines: 6,
             decoration: const InputDecoration(
-              labelText: 'Evidence description',
+              labelText: 'Comment on completion',
             ),
           ),
           const SizedBox(height: 24),
@@ -120,16 +152,27 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
       return;
     }
 
-    final title = _titleController.text.trim();
     final description = _descriptionController.text.trim();
 
-    if (title.isEmpty || description.isEmpty) {
+    if (description.isEmpty) {
       final messenger = ScaffoldMessenger.of(context);
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Enter an evidence title and description.'),
+            content: Text('Add a short comment about completing the goal.'),
+          ),
+        );
+      return;
+    }
+
+    if (_attachment == null) {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Attach a photo or video before submitting.'),
           ),
         );
       return;
@@ -143,12 +186,9 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
               id: DateTime.now().microsecondsSinceEpoch.toString(),
               goalId: widget.goalId,
               submittedByUserId: currentUser.id,
-              title: title,
               description: description,
               createdAt: DateTime.now(),
-              attachmentUrl: _hasAttachment
-                  ? 'placeholder://evidence-photo'
-                  : null,
+              attachment: _attachment,
             ),
           );
 
@@ -164,5 +204,72 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
     } catch (_) {
       // Error feedback is handled by the provider listener above.
     }
+  }
+
+  Future<void> _pickPhoto() async {
+    await _pickAttachment(
+      picker: () => _picker.pickImage(source: ImageSource.gallery),
+      type: EvidenceAttachmentType.image,
+    );
+  }
+
+  Future<void> _pickVideo() async {
+    await _pickAttachment(
+      picker: () => _picker.pickVideo(source: ImageSource.gallery),
+      type: EvidenceAttachmentType.video,
+    );
+  }
+
+  Future<void> _pickAttachment({
+    required Future<XFile?> Function() picker,
+    required EvidenceAttachmentType type,
+  }) async {
+    try {
+      final file = await picker();
+      if (file == null || !mounted) {
+        return;
+      }
+
+      setState(() {
+        _attachment = EvidenceAttachment(
+          type: type,
+          localPath: file.path,
+          mimeType: _mimeTypeFor(file.name, type),
+          fileName: file.name,
+        );
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Could not pick media: $error')));
+    }
+  }
+
+  String _mimeTypeFor(String fileName, EvidenceAttachmentType type) {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toLowerCase()
+        : '';
+
+    return switch ((type, extension)) {
+      (EvidenceAttachmentType.image, 'png') => 'image/png',
+      (EvidenceAttachmentType.image, 'heic') => 'image/heic',
+      (EvidenceAttachmentType.image, 'webp') => 'image/webp',
+      (EvidenceAttachmentType.image, _) => 'image/jpeg',
+      (EvidenceAttachmentType.video, 'mov') => 'video/quicktime',
+      (EvidenceAttachmentType.video, 'm4v') => 'video/x-m4v',
+      (EvidenceAttachmentType.video, 'webm') => 'video/webm',
+      (EvidenceAttachmentType.video, _) => 'video/mp4',
+    };
+  }
+
+  String _attachmentStatus(EvidenceAttachment attachment) {
+    return attachment.type == EvidenceAttachmentType.image
+        ? 'Photo selected'
+        : 'Video selected';
   }
 }

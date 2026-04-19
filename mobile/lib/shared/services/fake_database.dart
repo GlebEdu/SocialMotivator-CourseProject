@@ -4,6 +4,7 @@ import '../../features/arbitration/domain/entities/arbitration_vote.dart';
 import '../../features/bets/domain/entities/bet.dart';
 import '../../features/bets/domain/entities/bet_side.dart';
 import '../../features/goals/domain/entities/evidence.dart';
+import '../../features/goals/domain/entities/evidence_attachment.dart';
 import '../../features/goals/domain/entities/goal.dart';
 import '../../features/goals/domain/entities/goal_status.dart';
 import '../../features/profile/domain/entities/user.dart';
@@ -111,7 +112,7 @@ class FakeDatabase {
       title: 'Finish my portfolio case study',
       description:
           'Evidence was submitted and the case is currently under community review.',
-      status: GoalStatus.draft,
+      status: GoalStatus.inReview,
       createdAt: DateTime(2026, 3, 6, 14),
       deadline: DateTime(2026, 3, 18),
     ),
@@ -191,11 +192,15 @@ class FakeDatabase {
       id: 'evidence_nina_portfolio',
       goalId: 'goal_nina_portfolio',
       submittedByUserId: 'user_nina',
-      title: 'Final portfolio link',
       description:
           'Shared the updated Behance project and exported PDF case study for review.',
       createdAt: DateTime(2026, 3, 13, 16, 30),
-      attachmentUrl: 'placeholder://portfolio-proof',
+      attachment: const EvidenceAttachment(
+        type: EvidenceAttachmentType.image,
+        remoteUrl: 'placeholder://portfolio-proof',
+        mimeType: 'image/jpeg',
+        fileName: 'portfolio-proof.jpg',
+      ),
     ),
   };
 
@@ -207,7 +212,7 @@ class FakeDatabase {
       createdByUserId: 'user_nina',
       arbitratorUserIds: const <String>['user_alice', 'user_max', 'user_leo'],
       reason:
-          'Final portfolio link: Shared the updated Behance project and exported PDF case study for review.',
+          'Shared the updated Behance project and exported PDF case study for review.',
       decision: ArbitrationDecision.pending,
       createdAt: DateTime(2026, 3, 13, 16, 35),
     ),

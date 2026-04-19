@@ -96,7 +96,7 @@ class GoalEngine {
     }
 
     final savedEvidence = await _goalsRepository.submitEvidence(evidence);
-    await _ensureArbitrationCaseForDeadline(goal, savedEvidence);
+    await _ensureArbitrationCaseForGoal(goal: goal, evidence: savedEvidence);
 
     return savedEvidence;
   }
@@ -392,17 +392,6 @@ class GoalEngine {
     return arbitrators;
   }
 
-  Future<void> _ensureArbitrationCaseForDeadline(
-    Goal goal,
-    Evidence evidence,
-  ) async {
-    if (!_hasDeadlinePassed(goal.deadline, DateTime.now())) {
-      return;
-    }
-
-    await _ensureArbitrationCaseForGoal(goal: goal, evidence: evidence);
-  }
-
   Future<void> _ensureArbitrationCaseForGoal({
     required Goal goal,
     required Evidence evidence,
@@ -428,7 +417,7 @@ class GoalEngine {
         userId: goal.userId,
         title: goal.title,
         description: goal.description,
-        status: GoalStatus.draft,
+        status: GoalStatus.inReview,
         createdAt: goal.createdAt,
         deadline: goal.deadline,
       ),
@@ -440,7 +429,7 @@ class GoalEngine {
         goalId: goal.id,
         createdByUserId: evidence.submittedByUserId,
         arbitratorUserIds: arbitratorUserIds,
-        reason: '${evidence.title}: ${evidence.description}',
+        reason: evidence.description,
         decision: ArbitrationDecision.pending,
         createdAt: DateTime.now(),
       ),
@@ -470,7 +459,7 @@ class GoalEngine {
         return BetSide.forGoal;
       case GoalStatus.failed:
         return BetSide.againstGoal;
-      case GoalStatus.draft:
+      case GoalStatus.inReview:
       case GoalStatus.active:
       case GoalStatus.cancelled:
         return null;

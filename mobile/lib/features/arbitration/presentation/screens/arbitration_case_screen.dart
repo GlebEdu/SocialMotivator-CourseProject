@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../goals/domain/entities/evidence_attachment.dart';
+import '../../../goals/presentation/widgets/evidence_attachment_preview.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../profile/presentation/widgets/author_summary_card.dart';
@@ -289,32 +291,11 @@ class _EvidenceReviewCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                children: <Widget>[
-                  const Icon(Icons.photo_camera_back_outlined, size: 40),
-                  const SizedBox(height: 12),
-                  Text(
-                    evidence?.attachmentUrl != null
-                        ? 'Photo proof placeholder attached'
-                        : 'No photo proof attached',
-                    style: Theme.of(context).textTheme.titleSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'This area will show the uploaded evidence photo once real attachments are supported.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+            EvidenceAttachmentPreview(
+              attachment: evidence?.attachment,
+              emptyTitle: 'No attachment submitted',
+              emptyDescription:
+                  'The author has not attached a photo or video for review.',
             ),
             const SizedBox(height: 16),
             if (evidence == null)
@@ -324,14 +305,16 @@ class _EvidenceReviewCard extends StatelessWidget {
               )
             else ...<Widget>[
               Text(
-                evidence.title,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
                 evidence.description,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              if (evidence.attachment != null) ...<Widget>[
+                const SizedBox(height: 12),
+                Text(
+                  _attachmentLabel(evidence.attachment!),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 'Submitted: ${_formatDate(evidence.createdAt)}',
@@ -348,6 +331,12 @@ class _EvidenceReviewCard extends StatelessWidget {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     return '${value.year}-$month-$day';
+  }
+
+  String _attachmentLabel(EvidenceAttachment attachment) {
+    return attachment.type == EvidenceAttachmentType.image
+        ? 'Photo attachment'
+        : 'Video attachment';
   }
 }
 

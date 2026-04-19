@@ -326,7 +326,7 @@ class _GoalStatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (backgroundColor, foregroundColor) = switch (status) {
-      GoalStatus.draft => (Colors.amber.shade100, Colors.amber.shade900),
+      GoalStatus.inReview => (Colors.amber.shade100, Colors.amber.shade900),
       GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
       GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
       GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
@@ -349,7 +349,7 @@ class _GoalStatusBanner extends StatelessWidget {
 
   String _labelForStatus(GoalStatus status) {
     switch (status) {
-      case GoalStatus.draft:
+      case GoalStatus.inReview:
         return 'In Review';
       case GoalStatus.active:
         return 'Active';
