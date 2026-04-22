@@ -83,6 +83,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final displayName = _displayNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    const minPasswordLength = 8;
 
     if (displayName.isEmpty ||
         email.isEmpty ||
@@ -94,6 +95,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ..showSnackBar(
           const SnackBar(
             content: Text('Enter a display name, valid email, and password.'),
+          ),
+        );
+      return;
+    }
+
+    if (password.length < minPasswordLength) {
+      final messenger = ScaffoldMessenger.of(context);
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Password must be at least 8 characters long.'),
           ),
         );
       return;

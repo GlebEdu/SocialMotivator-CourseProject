@@ -8,7 +8,7 @@ class Bet {
   final double amount;
   final DateTime createdAt;
 
-    const Bet({
+  const Bet({
     required this.id,
     required this.goalId,
     required this.userId,

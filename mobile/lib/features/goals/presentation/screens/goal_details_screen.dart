@@ -181,7 +181,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                           width: itemWidth,
                           child: _GoalDetailsMetricCard(
                             label: 'Bets placed',
-                            value: summary.goalBets.length.toString(),
+                            value: summary.goalBetsCount.toString(),
                           ),
                         ),
                         SizedBox(

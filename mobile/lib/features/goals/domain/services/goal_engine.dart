@@ -9,14 +9,11 @@ import '../../../bets/domain/entities/place_bet_input.dart';
 import '../../../bets/domain/repositories/bets_repository.dart';
 import '../../../profile/domain/entities/user.dart';
 import '../../../profile/domain/repositories/profile_repository.dart';
-import '../entities/create_goal_input.dart';
-import '../entities/evidence.dart';
 import '../entities/goal.dart';
 import '../entities/goal_status.dart';
 import '../repositories/goals_repository.dart';
 
 class GoalEngine {
-  static const int _arbitratorCount = 3;
   static const int _arbitrationMajorityThreshold = 2;
   GoalEngine({
     required AuthRepository authRepository,
@@ -30,7 +27,6 @@ class GoalEngine {
        _profileRepository = profileRepository,
        _arbitrationRepository = arbitrationRepository;
 
-  static const double _authorSupportAmount = 10;
   static const int _goalSuccessRatingDelta = 15;
   static const int _goalFailureRatingDelta = -10;
   static const int _winningBetRatingDelta = 5;
@@ -41,32 +37,6 @@ class GoalEngine {
   final BetsRepository _betsRepository;
   final ProfileRepository _profileRepository;
   final ArbitrationRepository _arbitrationRepository;
-
-  Future<Goal> createGoal(CreateGoalInput input) async {
-    final currentUser = await _requireCurrentUser();
-
-    final goal = Goal(
-      id: _generateId(),
-      userId: currentUser.id,
-      title: input.title,
-      description: input.description,
-      status: GoalStatus.active,
-      createdAt: DateTime.now(),
-      deadline: input.deadline,
-    );
-
-    final savedGoal = await _goalsRepository.saveGoal(goal);
-    await _placeBetForUser(
-      user: currentUser,
-      input: PlaceBetInput(
-        goalId: savedGoal.id,
-        side: BetSide.forGoal,
-        amount: _authorSupportAmount,
-      ),
-    );
-
-    return savedGoal;
-  }
 
   Future<Bet> placeBet(PlaceBetInput input) async {
     final currentUser = await _requireCurrentUser();
@@ -81,44 +51,6 @@ class GoalEngine {
     }
 
     return _placeBetForUser(user: currentUser, input: input);
-  }
-
-  Future<Evidence> submitEvidence(Evidence evidence) async {
-    final currentUser = await _requireCurrentUser();
-    final goal = await _requireGoal(evidence.goalId);
-
-    if (goal.status != GoalStatus.active) {
-      throw StateError('Evidence can only be submitted for active goals.');
-    }
-
-    if (evidence.submittedByUserId != currentUser.id) {
-      throw StateError('Evidence must be submitted by the current user.');
-    }
-
-    final savedEvidence = await _goalsRepository.submitEvidence(evidence);
-    await _ensureArbitrationCaseForGoal(goal: goal, evidence: savedEvidence);
-
-    return savedEvidence;
-  }
-
-  Future<void> syncExpiredGoalsForArbitration() async {
-    final goals = await _goalsRepository.getGoalsFeed();
-    for (final goal in goals) {
-      if (goal.status != GoalStatus.active) {
-        continue;
-      }
-
-      if (!_hasDeadlinePassed(goal.deadline, DateTime.now())) {
-        continue;
-      }
-
-      final evidence = await _goalsRepository.getLatestEvidenceForGoal(goal.id);
-      if (evidence == null) {
-        continue;
-      }
-
-      await _ensureArbitrationCaseForGoal(goal: goal, evidence: evidence);
-    }
   }
 
   Future<ArbitrationVote> voteArbitration(ArbitrationVote vote) async {
@@ -227,7 +159,10 @@ class GoalEngine {
       deadline: goal.deadline,
     );
 
-    final savedGoal = await _goalsRepository.updateGoal(resolvedGoal);
+    final savedGoal = await _goalsRepository.updateGoalStatus(
+      goalId: resolvedGoal.id,
+      status: resolvedGoal.status,
+    );
 
     if (status == GoalStatus.completed || status == GoalStatus.failed) {
       await distributeBettingPool(savedGoal);
@@ -373,69 +308,6 @@ class GoalEngine {
     return user;
   }
 
-  Future<List<String>> _selectArbitratorIds({
-    required Set<String> excludedUserIds,
-  }) async {
-    final availableUsers = await _profileRepository.getProfiles();
-    final arbitrators = availableUsers
-        .where((user) => !excludedUserIds.contains(user.id))
-        .take(_arbitratorCount)
-        .map((user) => user.id)
-        .toList(growable: false);
-
-    if (arbitrators.length < _arbitratorCount) {
-      throw StateError(
-        'At least $_arbitratorCount users are required to assign arbitrators.',
-      );
-    }
-
-    return arbitrators;
-  }
-
-  Future<void> _ensureArbitrationCaseForGoal({
-    required Goal goal,
-    required Evidence evidence,
-  }) async {
-    final existingCase = await _arbitrationRepository.getArbitrationCaseForGoal(
-      goal.id,
-    );
-    if (existingCase != null) {
-      return;
-    }
-
-    final goalBets = await _betsRepository.getBetsForGoal(goal.id);
-    final arbitratorUserIds = await _selectArbitratorIds(
-      excludedUserIds: <String>{
-        goal.userId,
-        ...goalBets.map((bet) => bet.userId),
-      },
-    );
-
-    await _goalsRepository.updateGoal(
-      Goal(
-        id: goal.id,
-        userId: goal.userId,
-        title: goal.title,
-        description: goal.description,
-        status: GoalStatus.inReview,
-        createdAt: goal.createdAt,
-        deadline: goal.deadline,
-      ),
-    );
-
-    await _arbitrationRepository.createArbitrationCase(
-      ArbitrationCase(
-        id: _generateId(),
-        goalId: goal.id,
-        createdByUserId: evidence.submittedByUserId,
-        arbitratorUserIds: arbitratorUserIds,
-        reason: evidence.description,
-        decision: ArbitrationDecision.pending,
-        createdAt: DateTime.now(),
-      ),
-    );
-  }
-
   bool _hasDeadlinePassed(DateTime? deadline, DateTime now) {
     if (deadline == null) {
       return false;
@@ -476,6 +348,4 @@ class GoalEngine {
         throw StateError('Pending arbitration decision cannot resolve a goal.');
     }
   }
-
-  String _generateId() => DateTime.now().microsecondsSinceEpoch.toString();
 }

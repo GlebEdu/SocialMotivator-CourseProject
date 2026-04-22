@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/models/arbitration_details_model.dart';
 import '../../../goals/domain/entities/evidence_attachment.dart';
 import '../../../goals/presentation/widgets/evidence_attachment_preview.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../profile/presentation/widgets/author_summary_card.dart';
 import '../../domain/entities/arbitration_decision.dart';
@@ -59,19 +59,34 @@ class ArbitrationCaseScreen extends ConsumerWidget {
   }
 }
 
-class _ArbitrationCaseBody extends ConsumerWidget {
+class _ArbitrationCaseBody extends ConsumerStatefulWidget {
   const _ArbitrationCaseBody({required this.caseDetails});
 
-  final ArbitrationCaseDetails caseDetails;
+  final ArbitrationCaseDetailsModel caseDetails;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ArbitrationCaseBody> createState() =>
+      _ArbitrationCaseBodyState();
+}
+
+class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
+  bool _hasPendingVoteSubmission = false;
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen<AsyncValue<void>>(voteArbitrationControllerProvider, (
       previous,
       next,
     ) {
+      final shouldHandleSubmissionResult =
+          _hasPendingVoteSubmission && previous?.isLoading == true;
+      if (!shouldHandleSubmissionResult) {
+        return;
+      }
+
       next.whenOrNull(
         data: (_) {
+          _hasPendingVoteSubmission = false;
           final messenger = ScaffoldMessenger.of(context);
           messenger
             ..hideCurrentSnackBar()
@@ -80,6 +95,7 @@ class _ArbitrationCaseBody extends ConsumerWidget {
             );
         },
         error: (error, _) {
+          _hasPendingVoteSubmission = false;
           final messenger = ScaffoldMessenger.of(context);
           messenger
             ..hideCurrentSnackBar()
@@ -88,15 +104,22 @@ class _ArbitrationCaseBody extends ConsumerWidget {
       );
     });
 
-    final currentUser = ref.watch(currentAuthenticatedUserProvider);
-    final authorSummary = ref.watch(
-      userGoalSummaryProvider(caseDetails.goal.userId),
-    );
     final voteState = ref.watch(voteArbitrationControllerProvider);
-    final canVote =
-        currentUser != null &&
-        caseDetails.arbitrationCase.decision == ArbitrationDecision.pending &&
-        caseDetails.arbitrationCase.arbitratorUserIds.contains(currentUser.id);
+    final caseDetails = widget.caseDetails;
+    final canVote = caseDetails.viewerContext.canVote;
+    final authorSummary = AsyncData<UserGoalSummary?>(
+      UserGoalSummary(
+        user: caseDetails.authorSummary.user,
+        goals: caseDetails.authorSummary.goals,
+        totalGoalsOverride: caseDetails.authorSummary.totalGoals,
+        completedGoalsOverride: caseDetails.authorSummary.completedGoals,
+        activeGoalsOverride: caseDetails.authorSummary.activeGoals,
+        resolvedGoalsOverride: caseDetails.authorSummary.resolvedGoals,
+        completionRateOverride: caseDetails.authorSummary.completionRate,
+        completionRateLabelOverride:
+            caseDetails.authorSummary.completionRateLabel,
+      ),
+    );
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -143,6 +166,10 @@ class _ArbitrationCaseBody extends ConsumerWidget {
         _GoalReviewCard(caseDetails: caseDetails),
         const SizedBox(height: 12),
         _EvidenceReviewCard(caseDetails: caseDetails),
+        const SizedBox(height: 12),
+        _AssignmentsCard(caseDetails: caseDetails),
+        const SizedBox(height: 12),
+        _VotesCard(caseDetails: caseDetails),
         const SizedBox(height: 16),
         if (canVote)
           Row(
@@ -151,11 +178,7 @@ class _ArbitrationCaseBody extends ConsumerWidget {
                 child: OutlinedButton(
                   onPressed: voteState.isLoading
                       ? null
-                      : () => _submitVote(
-                          ref,
-                          currentUser.id,
-                          ArbitrationDecision.rejected,
-                        ),
+                      : () => _submitVote(ArbitrationDecision.rejected),
                   child: const Text('Reject / Failed'),
                 ),
               ),
@@ -164,11 +187,7 @@ class _ArbitrationCaseBody extends ConsumerWidget {
                 child: FilledButton(
                   onPressed: voteState.isLoading
                       ? null
-                      : () => _submitVote(
-                          ref,
-                          currentUser.id,
-                          ArbitrationDecision.approved,
-                        ),
+                      : () => _submitVote(ArbitrationDecision.approved),
                   child: voteState.isLoading
                       ? const SizedBox(
                           width: 18,
@@ -183,7 +202,9 @@ class _ArbitrationCaseBody extends ConsumerWidget {
         else
           Text(
             caseDetails.arbitrationCase.decision == ArbitrationDecision.pending
-                ? 'Voting is available only for assigned arbitrators.'
+                ? caseDetails.viewerContext.hasVoted
+                      ? 'Your vote has been recorded. Waiting for the remaining arbitrators.'
+                      : 'Voting is available only for assigned arbitrators.'
                 : 'This case has already been resolved.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -191,21 +212,13 @@ class _ArbitrationCaseBody extends ConsumerWidget {
     );
   }
 
-  Future<void> _submitVote(
-    WidgetRef ref,
-    String voterUserId,
-    ArbitrationDecision decision,
-  ) async {
+  Future<void> _submitVote(ArbitrationDecision decision) async {
+    _hasPendingVoteSubmission = true;
     await ref
         .read(voteArbitrationControllerProvider.notifier)
         .vote(
-          ArbitrationVote(
-            id: DateTime.now().microsecondsSinceEpoch.toString(),
-            caseId: caseDetails.arbitrationCase.id,
-            voterUserId: voterUserId,
-            decision: decision,
-            createdAt: DateTime.now(),
-          ),
+          caseId: widget.caseDetails.arbitrationCase.id,
+          decision: decision,
         );
   }
 
@@ -219,7 +232,7 @@ class _ArbitrationCaseBody extends ConsumerWidget {
 class _GoalReviewCard extends StatelessWidget {
   const _GoalReviewCard({required this.caseDetails});
 
-  final ArbitrationCaseDetails caseDetails;
+  final ArbitrationCaseDetailsModel caseDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -274,11 +287,11 @@ class _GoalReviewCard extends StatelessWidget {
 class _EvidenceReviewCard extends StatelessWidget {
   const _EvidenceReviewCard({required this.caseDetails});
 
-  final ArbitrationCaseDetails caseDetails;
+  final ArbitrationCaseDetailsModel caseDetails;
 
   @override
   Widget build(BuildContext context) {
-    final evidence = caseDetails.evidence;
+    final evidence = caseDetails.latestEvidence;
 
     return Card(
       child: Padding(
@@ -337,6 +350,142 @@ class _EvidenceReviewCard extends StatelessWidget {
     return attachment.type == EvidenceAttachmentType.image
         ? 'Photo attachment'
         : 'Video attachment';
+  }
+}
+
+class _AssignmentsCard extends StatelessWidget {
+  const _AssignmentsCard({required this.caseDetails});
+
+  final ArbitrationCaseDetailsModel caseDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Assigned Arbitrators',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            ..._buildAssignments(context),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildAssignments(BuildContext context) {
+    return List<Widget>.generate(caseDetails.assignments.length, (index) {
+      final assignment = caseDetails.assignments[index];
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: index == caseDetails.assignments.length - 1 ? 0 : 12,
+        ),
+        child: Row(
+          children: <Widget>[
+            const Icon(Icons.person_outline, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(assignment.displayName)),
+            Text(
+              assignment.hasVoted ? 'Voted' : 'Pending',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      );
+    });
+  }
+}
+
+class _VotesCard extends StatelessWidget {
+  const _VotesCard({required this.caseDetails});
+
+  final ArbitrationCaseDetailsModel caseDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    final votes = caseDetails.votes;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Vote History',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            if (votes.isEmpty)
+              Text(
+                'No votes have been submitted yet.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              )
+            else
+              ..._buildVotes(context, votes),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildVotes(BuildContext context, List<ArbitrationVote> votes) {
+    return List<Widget>.generate(votes.length, (index) {
+      final vote = votes[index];
+      return Padding(
+        padding: EdgeInsets.only(bottom: index == votes.length - 1 ? 0 : 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _DecisionChip(decision: vote.decision),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(_displayNameForVote(vote.voterUserId)),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(vote.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  if (vote.comment != null && vote.comment!.trim().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        vote.comment!,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  String _displayNameForVote(String userId) {
+    for (final assignment in caseDetails.assignments) {
+      if (assignment.userId == userId) {
+        return assignment.displayName;
+      }
+    }
+    return userId;
+  }
+
+  String _formatDate(DateTime value) {
+    final month = value.month.toString().padLeft(2, '0');
+    final day = value.day.toString().padLeft(2, '0');
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '${value.year}-$month-$day $hour:$minute';
   }
 }
 

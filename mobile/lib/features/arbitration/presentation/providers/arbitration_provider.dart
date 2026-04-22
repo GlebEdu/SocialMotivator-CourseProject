@@ -1,121 +1,87 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/providers/repository_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../goals/domain/entities/evidence.dart';
-import '../../../goals/domain/entities/goal.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
-import '../../domain/entities/arbitration_case.dart';
-import '../../domain/entities/arbitration_vote.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../data/models/arbitration_details_model.dart';
+import '../../data/models/arbitration_summary_model.dart';
+import '../../data/models/arbitration_vote_response_model.dart';
+import '../../domain/entities/arbitration_decision.dart';
 
-final arbitrationListProvider = FutureProvider<List<ArbitrationCase>>((
-  ref,
-) async {
-  await ref.read(goalEngineProvider).syncExpiredGoalsForArbitration();
-  final currentUser = await ref.watch(authControllerProvider.future);
-  if (currentUser == null) {
-    return const <ArbitrationCase>[];
-  }
+final arbitrationListProvider =
+    FutureProvider<List<ArbitrationCaseSummaryModel>>((ref) async {
+      final currentUser = await ref.watch(authControllerProvider.future);
+      if (currentUser == null) {
+        return const <ArbitrationCaseSummaryModel>[];
+      }
 
-  final arbitrationCases = await ref
-      .watch(arbitrationRepositoryProvider)
-      .getArbitrationCases();
-
-  return arbitrationCases
-      .where(
-        (arbitrationCase) =>
-            arbitrationCase.arbitratorUserIds.contains(currentUser.id),
-      )
-      .toList(growable: false);
-});
-
-final arbitrationCaseProvider = FutureProvider.family<ArbitrationCase?, String>(
-  (ref, caseId) {
-    return ref
-        .watch(arbitrationRepositoryProvider)
-        .getArbitrationCaseById(caseId);
-  },
-);
+      return ref.watch(arbitrationReadRepositoryProvider).getAssignedCases();
+    });
 
 final arbitrationCaseDetailsProvider =
-    FutureProvider.family<ArbitrationCaseDetails?, String>((ref, caseId) async {
-      await ref.read(goalEngineProvider).syncExpiredGoalsForArbitration();
+    FutureProvider.family<ArbitrationCaseDetailsModel?, String>((
+      ref,
+      caseId,
+    ) async {
       final currentUser = await ref.watch(authControllerProvider.future);
       if (currentUser == null) {
         return null;
       }
 
-      final arbitrationCase = await ref
-          .watch(arbitrationRepositoryProvider)
-          .getArbitrationCaseById(caseId);
-      if (arbitrationCase == null) {
-        return null;
-      }
-
-      if (!arbitrationCase.arbitratorUserIds.contains(currentUser.id)) {
-        return null;
-      }
-
-      final goal = await ref.watch(
-        goalDetailsProvider(arbitrationCase.goalId).future,
-      );
-      if (goal == null) {
-        throw StateError(
-          'Goal ${arbitrationCase.goalId} was not found for arbitration case ${arbitrationCase.id}.',
-        );
-      }
-
-      final evidence = await ref.watch(goalEvidenceProvider(goal.id).future);
-
-      return ArbitrationCaseDetails(
-        arbitrationCase: arbitrationCase,
-        goal: goal,
-        evidence: evidence,
-      );
+      return ref
+          .watch(arbitrationReadRepositoryProvider)
+          .getCaseDetails(caseId);
     });
 
 final voteArbitrationControllerProvider =
-    AsyncNotifierProvider<VoteArbitrationController, void>(
+    AsyncNotifierProvider.autoDispose<VoteArbitrationController, void>(
       VoteArbitrationController.new,
     );
 
-class ArbitrationCaseDetails {
-  const ArbitrationCaseDetails({
-    required this.arbitrationCase,
-    required this.goal,
-    required this.evidence,
-  });
-
-  final ArbitrationCase arbitrationCase;
-  final Goal goal;
-  final Evidence? evidence;
-}
-
-class VoteArbitrationController extends AsyncNotifier<void> {
+class VoteArbitrationController extends AutoDisposeAsyncNotifier<void> {
   @override
-  Future<void> build() async {}
+  FutureOr<void> build() {}
 
-  Future<ArbitrationVote> vote(ArbitrationVote input) async {
-    final arbitrationCase = await ref
-        .read(arbitrationRepositoryProvider)
-        .getArbitrationCaseById(input.caseId);
+  Future<SubmitArbitrationVoteResponseModel> vote({
+    required String caseId,
+    required ArbitrationDecision decision,
+    String? comment,
+  }) async {
+    final caseDetails = await ref.read(
+      arbitrationCaseDetailsProvider(caseId).future,
+    );
+    if (caseDetails == null) {
+      throw StateError('Arbitration case $caseId was not found.');
+    }
 
     state = const AsyncLoading();
 
     final result = await AsyncValue.guard(
-      () => ref.read(goalEngineProvider).voteArbitration(input),
+      () => ref
+          .read(arbitrationReadRepositoryProvider)
+          .submitVoteResponse(
+            caseId: caseId,
+            decision: decision,
+            comment: comment,
+          ),
     );
     state = result.whenData((_) {});
 
     result.requireValue;
-    await ref.read(authControllerProvider.notifier).refreshCurrentUser();
-    ref.invalidate(arbitrationListProvider);
-    ref.invalidate(arbitrationCaseProvider(input.caseId));
 
-    if (arbitrationCase != null) {
-      ref.invalidate(goalsFeedProvider);
-      ref.invalidate(goalDetailsProvider(arbitrationCase.goalId));
-    }
+    ref.invalidate(arbitrationListProvider);
+    ref.invalidate(arbitrationCaseDetailsProvider(caseId));
+    ref.invalidate(goalsFeedProvider);
+    ref.invalidate(discoverGoalsProvider);
+    ref.invalidate(goalReadDetailsProvider(caseDetails.goal.id));
+    ref.invalidate(goalDetailsProvider(caseDetails.goal.id));
+    ref.invalidate(goalEvidenceProvider(caseDetails.goal.id));
+    ref.invalidate(
+      userProfileSummaryProvider(caseDetails.authorSummary.user.id),
+    );
 
     return result.requireValue;
   }

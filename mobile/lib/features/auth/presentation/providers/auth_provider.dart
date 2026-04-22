@@ -38,6 +38,10 @@ class AuthController extends AsyncNotifier<User?> {
     state = AsyncData(currentUser);
   }
 
+  void setCurrentUser(User? user) {
+    state = AsyncData(user);
+  }
+
   Future<void> login(LoginInput input) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(

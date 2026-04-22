@@ -17,6 +17,7 @@ class BetPanel extends ConsumerStatefulWidget {
 
 class _BetPanelState extends ConsumerState<BetPanel> {
   final _amountController = TextEditingController();
+  bool _hasPendingBetSubmission = false;
 
   @override
   void dispose() {
@@ -27,8 +28,15 @@ class _BetPanelState extends ConsumerState<BetPanel> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AsyncValue<void>>(placeBetControllerProvider, (previous, next) {
+      final shouldHandleSubmissionResult =
+          _hasPendingBetSubmission && previous?.isLoading == true;
+      if (!shouldHandleSubmissionResult) {
+        return;
+      }
+
       next.whenOrNull(
         data: (_) {
+          _hasPendingBetSubmission = false;
           final messenger = ScaffoldMessenger.of(context);
           messenger
             ..hideCurrentSnackBar()
@@ -38,6 +46,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
           _amountController.clear();
         },
         error: (error, _) {
+          _hasPendingBetSubmission = false;
           final messenger = ScaffoldMessenger.of(context);
           messenger
             ..hideCurrentSnackBar()
@@ -119,6 +128,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
       return;
     }
 
+    _hasPendingBetSubmission = true;
     await ref
         .read(placeBetControllerProvider.notifier)
         .placeBet(

@@ -8,7 +8,7 @@ class ArbitrationVote {
   final DateTime createdAt;
   final String? comment;
 
-    const ArbitrationVote({
+  const ArbitrationVote({
     required this.id,
     required this.caseId,
     required this.voterUserId,

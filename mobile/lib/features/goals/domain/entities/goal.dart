@@ -9,7 +9,7 @@ class Goal {
   final DateTime createdAt;
   final DateTime? deadline;
 
-    const Goal({
+  const Goal({
     required this.id,
     required this.userId,
     required this.title,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../domain/entities/arbitration_case.dart';
+import '../../data/models/arbitration_summary_model.dart';
 import '../../domain/entities/arbitration_decision.dart';
 import '../providers/arbitration_provider.dart';
 
@@ -55,7 +55,7 @@ class _ArbitrationCaseCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final ArbitrationCase arbitrationCase;
+  final ArbitrationCaseSummaryModel arbitrationCase;
   final VoidCallback onTap;
 
   @override
@@ -74,7 +74,7 @@ class _ArbitrationCaseCard extends StatelessWidget {
                 children: <Widget>[
                   Expanded(
                     child: Text(
-                      'Goal ${arbitrationCase.goalId}',
+                      arbitrationCase.goalTitle,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -99,6 +99,13 @@ class _ArbitrationCaseCard extends StatelessWidget {
                       _formatDate(arbitrationCase.createdAt),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    arbitrationCase.viewerAssignment.hasVoted
+                        ? 'Vote submitted'
+                        : 'Waiting for your vote',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
               ),

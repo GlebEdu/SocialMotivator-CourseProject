@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../domain/entities/evidence.dart';
 import '../../domain/entities/evidence_attachment.dart';
 import '../providers/goals_provider.dart';
 import '../widgets/evidence_attachment_preview.dart';
@@ -182,14 +181,9 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
       await ref
           .read(submitEvidenceControllerProvider.notifier)
           .submitEvidence(
-            Evidence(
-              id: DateTime.now().microsecondsSinceEpoch.toString(),
-              goalId: widget.goalId,
-              submittedByUserId: currentUser.id,
-              description: description,
-              createdAt: DateTime.now(),
-              attachment: _attachment,
-            ),
+            goalId: widget.goalId,
+            description: description,
+            attachment: _attachment!,
           );
 
       if (!mounted) {

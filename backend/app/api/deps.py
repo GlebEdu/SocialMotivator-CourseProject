@@ -19,6 +19,13 @@ def get_current_user(
     db: Session = Depends(get_db),
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ) -> User:
+    return _resolve_current_user(db, credentials)
+
+
+def _resolve_current_user(
+    db: Session,
+    credentials: HTTPAuthorizationCredentials,
+) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials.",
