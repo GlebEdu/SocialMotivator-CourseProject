@@ -39,7 +39,7 @@ class EvidenceSubmissionResultModel {
 
   factory EvidenceSubmissionResultModel.fromJson(Map<String, dynamic> json) {
     final evidenceJson = json['evidence'] as Map<String, dynamic>;
-    final attachmentJson = evidenceJson['attachment'] as Map<String, dynamic>?;
+    final attachments = _parseAttachments(evidenceJson);
 
     return EvidenceSubmissionResultModel(
       evidence: Evidence(
@@ -48,16 +48,7 @@ class EvidenceSubmissionResultModel {
         submittedByUserId: evidenceJson['submittedByUserId'] as String,
         description: evidenceJson['description'] as String,
         createdAt: DateTime.parse(evidenceJson['createdAt'] as String),
-        attachment: attachmentJson == null
-            ? null
-            : EvidenceAttachment(
-                type: EvidenceAttachmentType.values.byName(
-                  attachmentJson['type'] as String,
-                ),
-                remoteUrl: attachmentJson['url'] as String?,
-                mimeType: attachmentJson['mimeType'] as String?,
-                fileName: attachmentJson['fileName'] as String?,
-              ),
+        attachments: attachments,
       ),
       goalStatus: GoalStatus.values.byName(json['goalStatus'] as String),
       arbitrationCaseId: json['arbitrationCaseId'] as String?,
@@ -73,4 +64,32 @@ class EvidenceSubmissionResultModel {
     goalStatus: goalStatus,
     arbitrationCaseId: arbitrationCaseId,
   );
+
+  static List<EvidenceAttachment> _parseAttachments(
+    Map<String, dynamic> evidenceJson,
+  ) {
+    final attachmentsJson = evidenceJson['attachments'];
+    if (attachmentsJson is List) {
+      return attachmentsJson
+          .whereType<Map<String, dynamic>>()
+          .map(_parseAttachment)
+          .toList(growable: false);
+    }
+
+    final attachmentJson = evidenceJson['attachment'];
+    if (attachmentJson is Map<String, dynamic>) {
+      return <EvidenceAttachment>[_parseAttachment(attachmentJson)];
+    }
+
+    return const <EvidenceAttachment>[];
+  }
+
+  static EvidenceAttachment _parseAttachment(Map<String, dynamic> json) {
+    return EvidenceAttachment(
+      type: EvidenceAttachmentType.values.byName(json['type'] as String),
+      remoteUrl: json['url'] as String?,
+      mimeType: json['mimeType'] as String?,
+      fileName: json['fileName'] as String?,
+    );
+  }
 }

@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from app.models.enums import EvidenceAttachmentType, GoalStatus
 from app.schemas.base import CamelModel
@@ -42,15 +42,31 @@ class SubmitEvidenceAttachmentRequest(CamelModel):
 
 
 class SubmitEvidenceRequest(CamelModel):
-    description: str = Field(min_length=1, max_length=5000)
-    attachment: SubmitEvidenceAttachmentRequest
+    description: str = Field(default="", max_length=5000)
+    attachment: Optional[SubmitEvidenceAttachmentRequest] = None
+    attachments: list[SubmitEvidenceAttachmentRequest] = Field(
+        default_factory=list,
+        max_length=10,
+    )
 
     @field_validator("description")
     @classmethod
     def validate_description(cls, value: str) -> str:
-        if not value.strip():
-            raise ValueError("Description must not be empty.")
         return value.strip()
+
+    @model_validator(mode="after")
+    def validate_attachments(self) -> "SubmitEvidenceRequest":
+        if not self.attachments and self.attachment is not None:
+            self.attachments = [self.attachment]
+
+        if not self.attachments:
+            raise ValueError("At least one evidence attachment is required.")
+
+        upload_ids = {attachment.upload_id for attachment in self.attachments}
+        if len(upload_ids) != len(self.attachments):
+            raise ValueError("Evidence attachments must be unique.")
+
+        return self
 
 
 class SubmitEvidenceResponse(CamelModel):

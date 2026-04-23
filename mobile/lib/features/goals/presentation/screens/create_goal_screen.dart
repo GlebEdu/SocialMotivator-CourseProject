@@ -42,7 +42,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
 
     final createState = ref.watch(createGoalControllerProvider);
     final deadlineText = _deadline == null
-        ? 'No deadline selected'
+        ? 'Срок не выбран'
         : _formatDate(_deadline!);
 
     return Scaffold(
@@ -57,7 +57,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
             }
           },
         ),
-        title: const Text('Create Goal'),
+        title: const Text('Создать цель'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -65,7 +65,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
           TextField(
             controller: _titleController,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Title'),
+            decoration: const InputDecoration(labelText: 'Название'),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -73,17 +73,17 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
             textCapitalization: TextCapitalization.sentences,
             minLines: 1,
             maxLines: 6,
-            decoration: const InputDecoration(labelText: 'Description'),
+            decoration: const InputDecoration(labelText: 'Описание'),
           ),
           const SizedBox(height: 16),
           Card(
             child: ListTile(
               leading: const Icon(Icons.event_outlined),
-              title: const Text('Deadline'),
+              title: const Text('Срок'),
               subtitle: Text(deadlineText),
               trailing: TextButton(
                 onPressed: createState.isLoading ? null : _pickDeadline,
-                child: const Text('Select'),
+                child: const Text('Выбрать'),
               ),
             ),
           ),
@@ -94,7 +94,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                 onPressed: createState.isLoading
                     ? null
                     : () => setState(() => _deadline = null),
-                child: const Text('Clear deadline'),
+                child: const Text('Очистить срок'),
               ),
             ),
           const SizedBox(height: 24),
@@ -106,7 +106,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text('Create Goal'),
+                : const Text('Создать цель'),
           ),
         ],
       ),
@@ -139,7 +139,7 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Enter a title and description.')),
+          const SnackBar(content: Text('Введите название и описание.')),
         );
       return;
     }
@@ -168,6 +168,6 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }

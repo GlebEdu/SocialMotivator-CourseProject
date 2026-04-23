@@ -140,7 +140,7 @@ class SubmitEvidenceController extends AsyncNotifier<void> {
   Future<EvidenceSubmissionResult> submitEvidence({
     required String goalId,
     required String description,
-    required EvidenceAttachment attachment,
+    required List<EvidenceAttachment> attachments,
   }) async {
     state = const AsyncLoading();
 
@@ -148,7 +148,7 @@ class SubmitEvidenceController extends AsyncNotifier<void> {
       () => _submitEvidence(
         goalId: goalId,
         description: description,
-        attachment: attachment,
+        attachments: attachments,
       ),
     );
     state = result.whenData((_) {});
@@ -167,32 +167,48 @@ class SubmitEvidenceController extends AsyncNotifier<void> {
   Future<EvidenceSubmissionResult> _submitEvidence({
     required String goalId,
     required String description,
-    required EvidenceAttachment attachment,
+    required List<EvidenceAttachment> attachments,
   }) async {
-    final localPath = attachment.localPath;
-    final fileName = attachment.fileName;
-    if (localPath == null || localPath.isEmpty || fileName == null) {
-      throw StateError('Evidence attachment file is missing.');
+    if (attachments.isEmpty) {
+      throw StateError('Нужно добавить хотя бы один файл доказательства.');
     }
 
-    final upload = await ref
-        .read(goalsRepositoryProvider)
-        .createEvidenceUpload(
-          CreateEvidenceUploadInput(
-            type: attachment.type,
-            fileName: fileName,
-            mimeType: attachment.mimeType,
-          ),
-        );
+    final uploadedAttachments = <SubmitGoalEvidenceAttachmentInput>[];
+    for (final attachment in attachments) {
+      final localPath = attachment.localPath;
+      final fileName = attachment.fileName;
+      if (localPath == null || localPath.isEmpty || fileName == null) {
+        throw StateError('Файл доказательства отсутствует.');
+      }
 
-    final bytes = await File(localPath).readAsBytes();
-    await ref
-        .read(goalsRepositoryProvider)
-        .uploadEvidenceFile(
-          upload: upload,
-          bytes: bytes,
+      final upload = await ref
+          .read(goalsRepositoryProvider)
+          .createEvidenceUpload(
+            CreateEvidenceUploadInput(
+              type: attachment.type,
+              fileName: fileName,
+              mimeType: attachment.mimeType,
+            ),
+          );
+
+      final bytes = await File(localPath).readAsBytes();
+      await ref
+          .read(goalsRepositoryProvider)
+          .uploadEvidenceFile(
+            upload: upload,
+            bytes: bytes,
+            mimeType: attachment.mimeType,
+          );
+
+      uploadedAttachments.add(
+        SubmitGoalEvidenceAttachmentInput(
+          type: attachment.type,
+          uploadId: upload.uploadId,
+          fileName: fileName,
           mimeType: attachment.mimeType,
-        );
+        ),
+      );
+    }
 
     return ref
         .read(goalsRepositoryProvider)
@@ -200,12 +216,7 @@ class SubmitEvidenceController extends AsyncNotifier<void> {
           SubmitGoalEvidenceInput(
             goalId: goalId,
             description: description,
-            attachment: SubmitGoalEvidenceAttachmentInput(
-              type: attachment.type,
-              uploadId: upload.uploadId,
-              fileName: fileName,
-              mimeType: attachment.mimeType,
-            ),
+            attachments: uploadedAttachments,
           ),
         );
   }

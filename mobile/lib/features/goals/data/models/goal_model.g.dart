@@ -34,5 +34,4 @@ const _$GoalStatusEnumMap = {
   GoalStatus.active: 'active',
   GoalStatus.completed: 'completed',
   GoalStatus.failed: 'failed',
-  GoalStatus.cancelled: 'cancelled',
 };

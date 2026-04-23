@@ -34,15 +34,15 @@ class ArbitrationCaseScreen extends ConsumerWidget {
             }
           },
         ),
-        title: const Text('Arbitration Case'),
+        title: const Text('Дело арбитража'),
       ),
       body: arbitrationCaseAsync.when(
         data: (caseDetails) {
           if (caseDetails == null) {
             return const _ArbitrationCaseMessage(
               icon: Icons.search_off_outlined,
-              title: 'Case not found',
-              description: 'This arbitration case is no longer available.',
+              title: 'Дело не найдено',
+              description: 'Это дело арбитража больше недоступно.',
             );
           }
 
@@ -51,7 +51,7 @@ class ArbitrationCaseScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _ArbitrationCaseMessage(
           icon: Icons.error_outline,
-          title: 'Could not load case',
+          title: 'Не удалось загрузить дело',
           description: error.toString(),
         ),
       ),
@@ -91,7 +91,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
           messenger
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              const SnackBar(content: Text('Vote submitted successfully.')),
+              const SnackBar(content: Text('Голос успешно отправлен.')),
             );
         },
         error: (error, _) {
@@ -127,7 +127,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
         Card(
           child: ListTile(
             leading: const Icon(Icons.gavel_outlined),
-            title: Text('Case ${caseDetails.arbitrationCase.id}'),
+            title: Text('Дело ${caseDetails.arbitrationCase.id}'),
             subtitle: Text(caseDetails.goal.title),
           ),
         ),
@@ -139,20 +139,20 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Current Status',
+                  'Текущий статус',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
                 _DecisionChip(decision: caseDetails.arbitrationCase.decision),
                 const SizedBox(height: 16),
                 Text(
-                  'Created: ${_formatDate(caseDetails.arbitrationCase.createdAt)}',
+                  'Создано: ${_formatDate(caseDetails.arbitrationCase.createdAt)}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (caseDetails.arbitrationCase.resolvedAt != null) ...<Widget>[
                   const SizedBox(height: 8),
                   Text(
-                    'Resolved: ${_formatDate(caseDetails.arbitrationCase.resolvedAt!)}',
+                    'Решено: ${_formatDate(caseDetails.arbitrationCase.resolvedAt!)}',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
@@ -179,7 +179,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
                   onPressed: voteState.isLoading
                       ? null
                       : () => _submitVote(ArbitrationDecision.rejected),
-                  child: const Text('Reject / Failed'),
+                  child: const Text('Отклонить / провалена'),
                 ),
               ),
               const SizedBox(width: 12),
@@ -194,7 +194,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Approve / Completed'),
+                      : const Text('Одобрить / выполнена'),
                 ),
               ),
             ],
@@ -203,9 +203,9 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
           Text(
             caseDetails.arbitrationCase.decision == ArbitrationDecision.pending
                 ? caseDetails.viewerContext.hasVoted
-                      ? 'Your vote has been recorded. Waiting for the remaining arbitrators.'
-                      : 'Voting is available only for assigned arbitrators.'
-                : 'This case has already been resolved.',
+                      ? 'Ваш голос записан. Ожидаем остальных арбитров.'
+                      : 'Голосование доступно только назначенным арбитрам.'
+                : 'Это дело уже решено.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
       ],
@@ -225,7 +225,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }
 
@@ -237,7 +237,7 @@ class _GoalReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deadlineText = caseDetails.goal.deadline == null
-        ? 'No deadline'
+        ? 'Без срока'
         : _formatDate(caseDetails.goal.deadline!);
 
     return Card(
@@ -247,7 +247,7 @@ class _GoalReviewCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Goal to Verify',
+              'Цель для проверки',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -280,7 +280,7 @@ class _GoalReviewCard extends StatelessWidget {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }
 
@@ -292,6 +292,7 @@ class _EvidenceReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final evidence = caseDetails.latestEvidence;
+    final attachments = evidence?.attachments ?? const <EvidenceAttachment>[];
 
     return Card(
       child: Padding(
@@ -300,20 +301,32 @@ class _EvidenceReviewCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Submitted Evidence',
+              'Отправленное доказательство',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            EvidenceAttachmentPreview(
-              attachment: evidence?.attachment,
-              emptyTitle: 'No attachment submitted',
-              emptyDescription:
-                  'The author has not attached a photo or video for review.',
-            ),
+            if (attachments.isEmpty)
+              const EvidenceAttachmentPreview(
+                attachment: null,
+                emptyTitle: 'Файлы не отправлены',
+                emptyDescription:
+                    'Автор не прикрепил фото или видео для проверки.',
+              )
+            else
+              for (final entry in attachments.indexed) ...<Widget>[
+                Text(
+                  _attachmentLabel(context, entry.$2, entry.$1),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                EvidenceAttachmentPreview(attachment: entry.$2),
+                if (entry.$1 != attachments.length - 1)
+                  const SizedBox(height: 16),
+              ],
             const SizedBox(height: 16),
             if (evidence == null)
               Text(
-                'No evidence description was found for this goal.',
+                'Описание доказательства для этой цели не найдено.',
                 style: Theme.of(context).textTheme.bodyMedium,
               )
             else ...<Widget>[
@@ -321,16 +334,16 @@ class _EvidenceReviewCard extends StatelessWidget {
                 evidence.description,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              if (evidence.attachment != null) ...<Widget>[
+              if (attachments.isNotEmpty) ...<Widget>[
                 const SizedBox(height: 12),
                 Text(
-                  _attachmentLabel(evidence.attachment!),
+                  _attachmentsSubmitted(attachments.length),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
               const SizedBox(height: 12),
               Text(
-                'Submitted: ${_formatDate(evidence.createdAt)}',
+                'Отправлено: ${_formatDate(evidence.createdAt)}',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -340,16 +353,37 @@ class _EvidenceReviewCard extends StatelessWidget {
     );
   }
 
+  String _attachmentLabel(
+    BuildContext context,
+    EvidenceAttachment attachment,
+    int index,
+  ) {
+    final type = attachment.type == EvidenceAttachmentType.image
+        ? 'Фотофайл'
+        : 'Видеофайл';
+    return '$type ${index + 1}';
+  }
+
+  String _attachmentsSubmitted(int count) {
+    return '$count ${_plural(count, 'файл', 'файла', 'файлов')} отправлено';
+  }
+
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 
-  String _attachmentLabel(EvidenceAttachment attachment) {
-    return attachment.type == EvidenceAttachmentType.image
-        ? 'Photo attachment'
-        : 'Video attachment';
+  String _plural(int value, String one, String few, String many) {
+    final mod10 = value % 10;
+    final mod100 = value % 100;
+    if (mod10 == 1 && mod100 != 11) {
+      return one;
+    }
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return few;
+    }
+    return many;
   }
 }
 
@@ -367,7 +401,7 @@ class _AssignmentsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Assigned Arbitrators',
+              'Назначенные арбитры',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
@@ -391,7 +425,7 @@ class _AssignmentsCard extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(child: Text(assignment.displayName)),
             Text(
-              assignment.hasVoted ? 'Voted' : 'Pending',
+              assignment.hasVoted ? 'Проголосовал' : 'Ожидает',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -417,13 +451,13 @@ class _VotesCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              'Vote History',
+              'История голосов',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             if (votes.isEmpty)
               Text(
-                'No votes have been submitted yet.',
+                'Пока нет отправленных голосов.',
                 style: Theme.of(context).textTheme.bodyMedium,
               )
             else
@@ -451,7 +485,7 @@ class _VotesCard extends StatelessWidget {
                   Text(_displayNameForVote(vote.voterUserId)),
                   const SizedBox(height: 4),
                   Text(
-                    _formatDate(vote.createdAt),
+                    _formatDateTime(vote.createdAt),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   if (vote.comment != null && vote.comment!.trim().isNotEmpty)
@@ -480,12 +514,12 @@ class _VotesCard extends StatelessWidget {
     return userId;
   }
 
-  String _formatDate(DateTime value) {
+  String _formatDateTime(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     final hour = value.hour.toString().padLeft(2, '0');
     final minute = value.minute.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day $hour:$minute';
+    return '$day.$month.${value.year} $hour:$minute';
   }
 }
 
@@ -531,11 +565,11 @@ class _DecisionChip extends StatelessWidget {
   String _labelForDecision(ArbitrationDecision decision) {
     switch (decision) {
       case ArbitrationDecision.pending:
-        return 'Pending';
+        return 'Ожидает';
       case ArbitrationDecision.approved:
-        return 'Approved';
+        return 'Одобрено';
       case ArbitrationDecision.rejected:
-        return 'Rejected';
+        return 'Отклонено';
     }
   }
 }

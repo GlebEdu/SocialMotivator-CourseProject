@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+from pydantic import Field
+
 from app.models.enums import EvidenceAttachmentType, GoalStatus
 from app.schemas.base import CamelModel
 
@@ -93,6 +95,7 @@ class LatestEvidenceDto(CamelModel):
     description: str
     created_at: datetime
     attachment: Optional[EvidenceAttachmentDto] = None
+    attachments: list[EvidenceAttachmentDto] = Field(default_factory=list)
 
 
 class GoalDetailsDto(CamelModel):

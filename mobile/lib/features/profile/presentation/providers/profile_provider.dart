@@ -93,6 +93,6 @@ class UserGoalSummary {
   String get completionRateLabel =>
       completionRateLabelOverride ??
       (resolvedGoals == 0
-          ? 'No results yet'
+          ? 'Пока нет результатов'
           : '${(completionRate * 100).round()}%');
 }

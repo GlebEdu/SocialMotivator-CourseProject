@@ -45,27 +45,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return AuthFormCard(
-      title: 'Login',
-      submitLabel: 'Login',
+      title: 'Войти',
+      submitLabel: 'Войти',
       isSubmitting: authState.isLoading,
       onSubmit: _submit,
       footer: TextButton(
         onPressed: authState.isLoading ? null : () => context.go('/register'),
-        child: const Text('Create an account'),
+        child: const Text('Создать аккаунт'),
       ),
       children: <Widget>[
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           autofillHints: const <String>[AutofillHints.email],
-          decoration: const InputDecoration(labelText: 'Email'),
+          decoration: const InputDecoration(labelText: 'Почта'),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _passwordController,
           obscureText: true,
           autofillHints: const <String>[AutofillHints.password],
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: const InputDecoration(labelText: 'Пароль'),
         ),
       ],
     );
@@ -80,7 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Enter a valid email and password.')),
+          const SnackBar(content: Text('Введите корректную почту и пароль.')),
         );
       return;
     }

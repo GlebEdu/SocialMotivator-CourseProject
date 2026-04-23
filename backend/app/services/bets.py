@@ -12,6 +12,7 @@ from app.models.goal import Goal
 from app.models.user import User
 from app.models.wallet_transaction import WalletTransaction
 from app.schemas.bets import BetDto, PlaceBetRequest, PlaceBetResponse
+from app.services.goal_resolution import expire_overdue_goals
 from app.services.read_models import deadline_has_passed, get_goal_bet_summary
 
 
@@ -21,6 +22,7 @@ def place_bet(
     current_user_id: UUID,
     payload: PlaceBetRequest,
 ) -> PlaceBetResponse:
+    expire_overdue_goals(db)
     try:
         goal = db.get(Goal, goal_id)
         if goal is None:
@@ -112,6 +114,7 @@ def get_current_user_bets(
     *,
     goal_id: Optional[UUID] = None,
 ) -> list[BetDto]:
+    expire_overdue_goals(db)
     stmt = select(Bet).where(Bet.user_id == current_user_id)
     if goal_id is not None:
         stmt = stmt.where(Bet.goal_id == goal_id)

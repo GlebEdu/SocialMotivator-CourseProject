@@ -49,7 +49,6 @@ class EvidenceFile(UUIDPrimaryKeyMixin, CreatedAtMixin, Base):
         PGUUID(as_uuid=True),
         ForeignKey("evidence.id", ondelete="CASCADE"),
         nullable=False,
-        unique=True,
         index=True,
     )
     type: Mapped[EvidenceAttachmentType] = mapped_column(

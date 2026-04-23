@@ -1,1 +1,1 @@
-enum GoalStatus { inReview, active, completed, failed, cancelled }
+enum GoalStatus { inReview, active, completed, failed }

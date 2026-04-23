@@ -18,8 +18,8 @@ class ArbitrationListScreen extends ConsumerWidget {
         if (cases.isEmpty) {
           return const _ArbitrationMessage(
             icon: Icons.balance_outlined,
-            title: 'No arbitration cases',
-            description: 'Cases that need review will appear here.',
+            title: 'Нет дел арбитража',
+            description: 'Здесь появятся дела, которым нужна проверка.',
           );
         }
 
@@ -42,7 +42,7 @@ class ArbitrationListScreen extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => _ArbitrationMessage(
         icon: Icons.error_outline,
-        title: 'Could not load arbitration',
+        title: 'Не удалось загрузить арбитраж',
         description: error.toString(),
       ),
     );
@@ -103,8 +103,8 @@ class _ArbitrationCaseCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     arbitrationCase.viewerAssignment.hasVoted
-                        ? 'Vote submitted'
-                        : 'Waiting for your vote',
+                        ? 'Голос отправлен'
+                        : 'Ожидается ваш голос',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -119,7 +119,7 @@ class _ArbitrationCaseCard extends StatelessWidget {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }
 
@@ -165,11 +165,11 @@ class _DecisionChip extends StatelessWidget {
   String _labelForDecision(ArbitrationDecision decision) {
     switch (decision) {
       case ArbitrationDecision.pending:
-        return 'Pending';
+        return 'Ожидает';
       case ArbitrationDecision.approved:
-        return 'Approved';
+        return 'Одобрено';
       case ArbitrationDecision.rejected:
-        return 'Rejected';
+        return 'Отклонено';
     }
   }
 }

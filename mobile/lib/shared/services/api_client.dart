@@ -80,7 +80,7 @@ class ApiClient {
       return payload;
     }
 
-    throw const ApiException('Unexpected response format.');
+    throw const ApiException('Неожиданный формат ответа.');
   }
 
   Future<Map<String, dynamic>> postJson(
@@ -127,7 +127,7 @@ class ApiClient {
       response = await _httpClient.put(uri, headers: headers, body: bytes);
     } on SocketException {
       throw ApiException(
-        'Could not connect to HabitBet backend at ${uri.origin}.',
+        'Не удалось подключиться к серверу HabitBet по адресу ${uri.origin}.',
       );
     } on http.ClientException catch (error) {
       throw ApiException(error.message);
@@ -167,11 +167,11 @@ class ApiClient {
           body: body == null ? null : jsonEncode(body),
         );
       } else {
-        throw ApiException('Unsupported HTTP method: $method');
+        throw ApiException('Неподдерживаемый HTTP-метод: $method');
       }
     } on SocketException {
       throw ApiException(
-        'Could not connect to HabitBet backend at ${_baseUri.origin}.',
+        'Не удалось подключиться к серверу HabitBet по адресу ${_baseUri.origin}.',
       );
     } on http.ClientException catch (error) {
       throw ApiException(error.message);
@@ -204,7 +204,7 @@ class ApiClient {
 
     final token = await _tokenStore.read();
     if (token == null || token.isEmpty) {
-      throw const ApiException('Authentication is required.', statusCode: 401);
+      throw const ApiException('Требуется авторизация.', statusCode: 401);
     }
     headers[HttpHeaders.authorizationHeader] = 'Bearer $token';
     return headers;
@@ -230,7 +230,7 @@ class ApiClient {
       return payload;
     }
 
-    throw const ApiException('Unexpected response format.');
+    throw const ApiException('Неожиданный формат ответа.');
   }
 
   dynamic _decodeJson(http.Response response) {
@@ -243,7 +243,7 @@ class ApiClient {
 
   String _extractErrorMessage(http.Response response) {
     if (response.body.isEmpty) {
-      return 'Request failed with status ${response.statusCode}.';
+      return 'Запрос завершился ошибкой со статусом ${response.statusCode}.';
     }
 
     try {
@@ -274,6 +274,6 @@ class ApiClient {
       // Fall through to generic error message below.
     }
 
-    return 'Request failed with status ${response.statusCode}.';
+    return 'Запрос завершился ошибкой со статусом ${response.statusCode}.';
   }
 }

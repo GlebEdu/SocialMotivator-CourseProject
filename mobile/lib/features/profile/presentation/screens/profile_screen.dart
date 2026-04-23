@@ -1,13 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  bool _hasPendingLogout = false;
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<dynamic>>(authControllerProvider, (previous, next) {
+      final shouldHandleLogoutResult =
+          _hasPendingLogout && previous?.isLoading == true;
+      if (!shouldHandleLogoutResult) {
+        return;
+      }
+
+      next.whenOrNull(
+        data: (_) {
+          _hasPendingLogout = false;
+          context.go('/login');
+        },
+        error: (error, _) {
+          _hasPendingLogout = false;
+          final messenger = ScaffoldMessenger.of(context);
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(error.toString())));
+        },
+      );
+    });
+
     final authState = ref.watch(authControllerProvider);
     final currentUser = ref.watch(currentAuthenticatedUserProvider);
 
@@ -18,8 +48,8 @@ class ProfileScreen extends ConsumerWidget {
     if (currentUser == null) {
       return const _ProfileMessage(
         icon: Icons.person_off_outlined,
-        title: 'No user signed in',
-        description: 'Sign in to see your profile information.',
+        title: 'Пользователь не вошёл',
+        description: 'Войдите, чтобы увидеть информацию профиля.',
       );
     }
 
@@ -60,22 +90,39 @@ class ProfileScreen extends ConsumerWidget {
             children: <Widget>[
               ListTile(
                 leading: const Icon(Icons.monetization_on_outlined),
-                title: const Text('Balance'),
+                title: const Text('Баланс'),
                 subtitle: Text(
-                  '${currentUser.balance.toStringAsFixed(0)} Coins',
+                  '${currentUser.balance.toStringAsFixed(0)} монет',
                 ),
               ),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.star_border_outlined),
-                title: const Text('Rating'),
+                title: const Text('Рейтинг'),
                 subtitle: Text(currentUser.rating.toString()),
               ),
             ],
           ),
         ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: authState.isLoading ? null : _logout,
+          icon: const Icon(Icons.logout),
+          label: authState.isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Выйти'),
+        ),
       ],
     );
+  }
+
+  Future<void> _logout() async {
+    _hasPendingLogout = true;
+    await ref.read(logoutActionProvider)();
   }
 }
 

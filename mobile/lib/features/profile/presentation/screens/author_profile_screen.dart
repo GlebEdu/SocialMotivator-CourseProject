@@ -15,14 +15,14 @@ class AuthorProfileScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(userGoalSummaryProvider(userId));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Author Profile')),
+      appBar: AppBar(title: const Text('Профиль автора')),
       body: summaryAsync.when(
         data: (summary) {
           if (summary == null) {
             return const _AuthorProfileMessage(
               icon: Icons.person_search_outlined,
-              title: 'Author not found',
-              description: 'This profile is no longer available.',
+              title: 'Автор не найден',
+              description: 'Этот профиль больше недоступен.',
             );
           }
 
@@ -31,13 +31,13 @@ class AuthorProfileScreen extends ConsumerWidget {
             children: <Widget>[
               _AuthorProfileHeader(summary: summary),
               const SizedBox(height: 24),
-              Text('Goals', style: Theme.of(context).textTheme.titleLarge),
+              Text('Цели', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
               if (summary.goals.isEmpty)
                 const _AuthorProfileMessage(
                   icon: Icons.flag_outlined,
-                  title: 'No goals yet',
-                  description: 'This author has not published any goals yet.',
+                  title: 'Пока нет целей',
+                  description: 'Этот автор пока не опубликовал цели.',
                 )
               else
                 ...summary.goals.map(
@@ -55,7 +55,7 @@ class AuthorProfileScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _AuthorProfileMessage(
           icon: Icons.error_outline,
-          title: 'Could not load profile',
+          title: 'Не удалось загрузить профиль',
           description: error.toString(),
         ),
       ),
@@ -88,7 +88,7 @@ class _AuthorProfileHeader extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '${summary.completedGoals}/${summary.totalGoals} goals completed',
+              '${summary.completedGoals}/${summary.totalGoals} целей выполнено',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -103,28 +103,30 @@ class _AuthorProfileHeader extends StatelessWidget {
                     SizedBox(
                       width: itemWidth,
                       child: _ProfileStatCard(
-                        label: 'Rating',
+                        label: 'Рейтинг',
                         value: summary.user.rating.toString(),
                       ),
                     ),
                     SizedBox(
                       width: itemWidth,
                       child: _ProfileStatCard(
-                        label: 'Goals',
+                        label: 'Цели',
                         value: summary.totalGoals.toString(),
                       ),
                     ),
                     SizedBox(
                       width: itemWidth,
                       child: _ProfileStatCard(
-                        label: 'Completion rate',
-                        value: summary.completionRateLabel,
+                        label: 'Процент выполнения',
+                        value: _completionRateLabel(
+                          summary.completionRateLabel,
+                        ),
                       ),
                     ),
                     SizedBox(
                       width: itemWidth,
                       child: _ProfileStatCard(
-                        label: 'Active goals',
+                        label: 'Активные цели',
                         value: summary.activeGoals.toString(),
                       ),
                     ),
@@ -136,6 +138,10 @@ class _AuthorProfileHeader extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _completionRateLabel(String value) {
+    return value == 'No results yet' ? 'Пока нет результатов' : value;
   }
 }
 

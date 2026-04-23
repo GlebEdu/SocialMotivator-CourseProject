@@ -17,7 +17,6 @@ goal_status = postgresql.ENUM(
     "active",
     "completed",
     "failed",
-    "cancelled",
     name="goal_status",
     create_type=False,
 )
@@ -298,7 +297,7 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_evidence_files")),
     )
-    op.create_index(op.f("ix_evidence_files_evidence_id"), "evidence_files", ["evidence_id"], unique=True)
+    op.create_index(op.f("ix_evidence_files_evidence_id"), "evidence_files", ["evidence_id"], unique=False)
 
     op.create_table(
         "wallet_transactions",

@@ -123,13 +123,17 @@ class ApiGoalsRepository implements GoalsRepository {
       '/goals/${input.goalId}/evidence',
       body: <String, dynamic>{
         'description': input.description,
-        'attachment': <String, dynamic>{
-          'type': input.attachment.type.name,
-          'uploadId': input.attachment.uploadId,
-          'fileName': input.attachment.fileName,
-          if (input.attachment.mimeType != null)
-            'mimeType': input.attachment.mimeType,
-        },
+        'attachments': input.attachments
+            .map(
+              (attachment) => <String, dynamic>{
+                'type': attachment.type.name,
+                'uploadId': attachment.uploadId,
+                'fileName': attachment.fileName,
+                if (attachment.mimeType != null)
+                  'mimeType': attachment.mimeType,
+              },
+            )
+            .toList(growable: false),
       },
     );
     return EvidenceSubmissionResultModel.fromJson(payload).toEntity();

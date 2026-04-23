@@ -133,23 +133,39 @@ class GoalDetailsReadModel {
       return null;
     }
 
-    final attachmentJson = value['attachment'] as Map<String, dynamic>?;
     return Evidence(
       id: value['id'] as String,
       goalId: value['goalId'] as String,
       submittedByUserId: value['submittedByUserId'] as String,
       description: value['description'] as String,
       createdAt: DateTime.parse(value['createdAt'] as String),
-      attachment: attachmentJson == null
-          ? null
-          : EvidenceAttachment(
-              type: EvidenceAttachmentType.values.byName(
-                attachmentJson['type'] as String,
-              ),
-              remoteUrl: attachmentJson['url'] as String?,
-              mimeType: attachmentJson['mimeType'] as String?,
-              fileName: attachmentJson['fileName'] as String?,
-            ),
+      attachments: _parseAttachments(value),
+    );
+  }
+
+  static List<EvidenceAttachment> _parseAttachments(Map<String, dynamic> json) {
+    final attachmentsJson = json['attachments'];
+    if (attachmentsJson is List) {
+      return attachmentsJson
+          .whereType<Map<String, dynamic>>()
+          .map(_parseAttachment)
+          .toList(growable: false);
+    }
+
+    final attachmentJson = json['attachment'];
+    if (attachmentJson is Map<String, dynamic>) {
+      return <EvidenceAttachment>[_parseAttachment(attachmentJson)];
+    }
+
+    return const <EvidenceAttachment>[];
+  }
+
+  static EvidenceAttachment _parseAttachment(Map<String, dynamic> json) {
+    return EvidenceAttachment(
+      type: EvidenceAttachmentType.values.byName(json['type'] as String),
+      remoteUrl: json['url'] as String?,
+      mimeType: json['mimeType'] as String?,
+      fileName: json['fileName'] as String?,
     );
   }
 }

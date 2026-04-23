@@ -41,7 +41,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
           messenger
             ..hideCurrentSnackBar()
             ..showSnackBar(
-              const SnackBar(content: Text('Bet placed successfully.')),
+              const SnackBar(content: Text('Ставка успешно размещена.')),
             );
           _amountController.clear();
         },
@@ -64,7 +64,10 @@ class _BetPanelState extends ConsumerState<BetPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text('Place a Bet', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Сделать ставку',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             TextField(
               controller: _amountController,
@@ -72,14 +75,14 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                 decimal: true,
               ),
               decoration: const InputDecoration(
-                labelText: 'Bet amount',
-                prefixText: 'Coins ',
+                labelText: 'Сумма ставки',
+                prefixText: 'Монеты ',
               ),
             ),
             const SizedBox(height: 16),
             if (!isBettingOpen)
               Text(
-                'Betting is only available for active goals.',
+                'Ставки доступны только для активных целей.',
                 style: Theme.of(context).textTheme.bodySmall,
               )
             else
@@ -90,7 +93,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                       onPressed: betState.isLoading
                           ? null
                           : () => _submitBet(BetSide.againstGoal),
-                      child: const Text('Bet Against'),
+                      child: const Text('Против'),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -105,7 +108,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Bet For'),
+                          : const Text('За'),
                     ),
                   ),
                 ],
@@ -123,7 +126,7 @@ class _BetPanelState extends ConsumerState<BetPanel> {
       messenger
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          const SnackBar(content: Text('Enter a valid bet amount.')),
+          const SnackBar(content: Text('Введите корректную сумму ставки.')),
         );
       return;
     }

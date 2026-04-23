@@ -71,7 +71,7 @@ class _EvidenceAttachmentPreviewState extends State<EvidenceAttachmentPreview> {
     if (source == null) {
       return _AttachmentPlaceholder(
         icon: Icons.broken_image_outlined,
-        title: 'Image unavailable',
+        title: 'Изображение недоступно',
         description: _attachmentSummary(attachment),
       );
     }
@@ -83,7 +83,7 @@ class _EvidenceAttachmentPreviewState extends State<EvidenceAttachmentPreview> {
             errorBuilder: (context, error, stackTrace) =>
                 _AttachmentPlaceholder(
                   icon: Icons.broken_image_outlined,
-                  title: 'Image unavailable',
+                  title: 'Изображение недоступно',
                   description: _attachmentSummary(attachment),
                 ),
           )
@@ -93,7 +93,7 @@ class _EvidenceAttachmentPreviewState extends State<EvidenceAttachmentPreview> {
             errorBuilder: (context, error, stackTrace) =>
                 _AttachmentPlaceholder(
                   icon: Icons.broken_image_outlined,
-                  title: 'Image unavailable',
+                  title: 'Изображение недоступно',
                   description: _attachmentSummary(attachment),
                 ),
           );
@@ -115,7 +115,7 @@ class _EvidenceAttachmentPreviewState extends State<EvidenceAttachmentPreview> {
     if (source == null) {
       return _AttachmentPlaceholder(
         icon: Icons.videocam_off_outlined,
-        title: 'Video unavailable',
+        title: 'Видео недоступно',
         description: _attachmentSummary(attachment),
       );
     }
@@ -239,8 +239,8 @@ class _EvidenceAttachmentPreviewState extends State<EvidenceAttachmentPreview> {
 
   String _attachmentSummary(EvidenceAttachment attachment) {
     return attachment.type == EvidenceAttachmentType.image
-        ? 'Image preview unavailable'
-        : 'Video preview unavailable';
+        ? 'Предпросмотр изображения недоступен'
+        : 'Предпросмотр видео недоступен';
   }
 }
 

@@ -23,31 +23,29 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: SegmentedButton<DiscoverGoalsFilter>(
-              selected: <DiscoverGoalsFilter>{_selectedFilter},
-              showSelectedIcon: false,
-              segments: const <ButtonSegment<DiscoverGoalsFilter>>[
-                ButtonSegment<DiscoverGoalsFilter>(
-                  value: DiscoverGoalsFilter.all,
-                  label: Text('All'),
-                ),
-                ButtonSegment<DiscoverGoalsFilter>(
-                  value: DiscoverGoalsFilter.predicted,
-                  label: Text('Predicted'),
-                ),
-                ButtonSegment<DiscoverGoalsFilter>(
-                  value: DiscoverGoalsFilter.newOnly,
-                  label: Text('New'),
-                ),
-              ],
-              onSelectionChanged: (selection) {
-                setState(() {
-                  _selectedFilter = selection.first;
-                });
-              },
-            ),
+          child: SegmentedButton<DiscoverGoalsFilter>(
+            selected: <DiscoverGoalsFilter>{_selectedFilter},
+            showSelectedIcon: false,
+            expandedInsets: EdgeInsets.zero,
+            segments: <ButtonSegment<DiscoverGoalsFilter>>[
+              ButtonSegment<DiscoverGoalsFilter>(
+                value: DiscoverGoalsFilter.all,
+                label: _SegmentLabel('Все'),
+              ),
+              ButtonSegment<DiscoverGoalsFilter>(
+                value: DiscoverGoalsFilter.predicted,
+                label: _SegmentLabel('С прогнозом'),
+              ),
+              ButtonSegment<DiscoverGoalsFilter>(
+                value: DiscoverGoalsFilter.newOnly,
+                label: _SegmentLabel('Новые'),
+              ),
+            ],
+            onSelectionChanged: (selection) {
+              setState(() {
+                _selectedFilter = selection.first;
+              });
+            },
           ),
         ),
         Expanded(
@@ -73,9 +71,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     return GoalCard(
                       goal: item.goal,
                       badges: item.hasPrediction
-                          ? const <GoalCardBadge>[
+                          ? <GoalCardBadge>[
                               GoalCardBadge(
-                                label: 'You predicted',
+                                label: 'Вы прогнозировали',
                                 icon: Icons.check_circle_outline,
                               ),
                             ]
@@ -89,7 +87,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => _DiscoverMessage(
               icon: Icons.error_outline,
-              title: 'Could not load goals',
+              title: 'Не удалось загрузить цели',
               description: error.toString(),
             ),
           ),
@@ -100,21 +98,39 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   String _emptyTitleFor(DiscoverGoalsFilter filter) {
     return switch (filter) {
-      DiscoverGoalsFilter.all => 'No goals to discover',
-      DiscoverGoalsFilter.predicted => 'No predicted goals yet',
-      DiscoverGoalsFilter.newOnly => 'No new goals right now',
+      DiscoverGoalsFilter.all => 'Нет целей для обзора',
+      DiscoverGoalsFilter.predicted => 'Пока нет целей с вашим прогнозом',
+      DiscoverGoalsFilter.newOnly => 'Сейчас нет новых целей',
     };
   }
 
   String _emptyDescriptionFor(DiscoverGoalsFilter filter) {
     return switch (filter) {
       DiscoverGoalsFilter.all =>
-        'Goals created by other users will appear here.',
+        'Здесь появятся цели, созданные другими пользователями.',
       DiscoverGoalsFilter.predicted =>
-        'Goals you already predicted on will appear in this tab.',
+        'Здесь появятся цели, на которые вы уже сделали прогноз.',
       DiscoverGoalsFilter.newOnly =>
-        'Goals you have not predicted on yet will appear here.',
+        'Здесь появятся цели, на которые вы ещё не сделали прогноз.',
     };
+  }
+}
+
+class _SegmentLabel extends StatelessWidget {
+  const _SegmentLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 }
 
@@ -139,7 +155,11 @@ class _DiscoverMessage extends StatelessWidget {
           children: <Widget>[
             Icon(icon, size: 48),
             const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             Text(
               description,

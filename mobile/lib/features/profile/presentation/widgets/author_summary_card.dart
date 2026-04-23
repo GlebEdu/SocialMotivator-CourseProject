@@ -32,7 +32,7 @@ class AuthorSummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Author', style: Theme.of(context).textTheme.titleMedium),
+                Text('Автор', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
                 Row(
                   children: <Widget>[
@@ -48,7 +48,7 @@ class AuthorSummaryCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Rating ${summary.user.rating}',
+                            'Рейтинг ${summary.user.rating}',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -68,15 +68,15 @@ class AuthorSummaryCard extends StatelessWidget {
                         SizedBox(
                           width: itemWidth,
                           child: _AuthorMetricCard(
-                            label: 'Completed',
+                            label: 'Выполнено',
                             value:
-                                '${summary.completedGoals}/${summary.totalGoals} goals',
+                                '${summary.completedGoals}/${summary.totalGoals} целей',
                           ),
                         ),
                         SizedBox(
                           width: itemWidth,
                           child: _AuthorMetricCard(
-                            label: 'Active goals',
+                            label: 'Активные цели',
                             value: summary.activeGoals.toString(),
                           ),
                         ),
@@ -86,7 +86,7 @@ class AuthorSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Completion rate: ${summary.completionRateLabel}',
+                  'Процент выполнения: ${_completionRateLabel(summary.completionRateLabel)}',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 if (showViewProfile) ...<Widget>[
@@ -97,7 +97,7 @@ class AuthorSummaryCard extends StatelessWidget {
                       onPressed: () =>
                           context.push('/users/${summary.user.id}'),
                       icon: const Icon(Icons.person_outline),
-                      label: const Text('View profile'),
+                      label: const Text('Открыть профиль'),
                     ),
                   ),
                 ],
@@ -117,7 +117,7 @@ class AuthorSummaryCard extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
               SizedBox(width: 12),
-              Expanded(child: Text('Loading author context...')),
+              Expanded(child: Text('Загрузка автора...')),
             ],
           ),
         ),
@@ -125,10 +125,14 @@ class AuthorSummaryCard extends StatelessWidget {
       error: (error, _) => Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Could not load author context: $error'),
+          child: Text('Не удалось загрузить автора: $error'),
         ),
       ),
     );
+  }
+
+  String _completionRateLabel(String value) {
+    return value == 'No results yet' ? 'Пока нет результатов' : value;
   }
 }
 

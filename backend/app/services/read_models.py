@@ -30,6 +30,7 @@ from app.schemas.read_models import (
     PublicUserDto,
 )
 from app.schemas.user import CurrentUserProfile
+from app.services.goal_resolution import expire_overdue_goals
 
 
 DEFAULT_PAGE_SIZE = 50
@@ -46,6 +47,7 @@ def get_current_user_profile(current_user: User) -> CurrentUserProfile:
 
 
 def get_user_profile_summary(db: Session, user_id: UUID) -> AuthorProfileSummaryDto:
+    expire_overdue_goals(db)
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(
@@ -63,6 +65,7 @@ def get_user_profile_summary(db: Session, user_id: UUID) -> AuthorProfileSummary
 
 
 def get_goal_author_summary(db: Session, user_id: UUID) -> GoalAuthorSummaryDto:
+    expire_overdue_goals(db)
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(
@@ -86,6 +89,7 @@ def get_my_goals(
     goal_status: Optional[GoalStatus] = None,
     limit: int = DEFAULT_PAGE_SIZE,
 ) -> list[GoalListItemDto]:
+    expire_overdue_goals(db)
     stmt, _ = _build_goal_list_stmt(viewer_id=viewer_id)
     stmt = stmt.where(Goal.user_id == viewer_id)
     if goal_status is not None:
@@ -101,6 +105,7 @@ def get_discover_goals(
     filter_value: DiscoverGoalsFilter = DiscoverGoalsFilter.ALL,
     limit: int = DEFAULT_PAGE_SIZE,
 ) -> list[GoalListItemDto]:
+    expire_overdue_goals(db)
     stmt, viewer_aggregate = _build_goal_list_stmt(viewer_id=viewer_id)
     stmt = stmt.where(Goal.user_id != viewer_id).where(Goal.status != GoalStatus.COMPLETED)
 
@@ -121,6 +126,7 @@ def get_goal_details(
     goal_id: UUID,
     viewer_id: UUID,
 ) -> GoalDetailsDto:
+    expire_overdue_goals(db)
     stmt, _ = _build_goal_list_stmt(viewer_id=viewer_id)
     stmt = stmt.where(Goal.id == goal_id).limit(1)
     row = db.execute(stmt).mappings().first()
@@ -171,6 +177,7 @@ def get_goal_bet_summary(
     goal_id: UUID,
     viewer_id: UUID,
 ) -> GoalBetSummaryDto:
+    expire_overdue_goals(db)
     stmt, _ = _build_goal_list_stmt(viewer_id=viewer_id)
     stmt = stmt.where(Goal.id == goal_id).limit(1)
     row = db.execute(stmt).mappings().first()
@@ -338,45 +345,52 @@ def _get_user_goals(db: Session, user_id: UUID) -> list[GoalSnapshotDto]:
 
 
 def _get_latest_evidence(db: Session, goal_id: UUID) -> Optional[LatestEvidenceDto]:
-    row = db.execute(
+    evidence_row = db.execute(
         select(
             Evidence.id.label("evidence_id"),
             Evidence.goal_id.label("goal_id"),
             Evidence.submitted_by_user_id.label("submitted_by_user_id"),
             Evidence.description.label("description"),
             Evidence.created_at.label("created_at"),
+        )
+        .where(Evidence.goal_id == goal_id)
+        .order_by(Evidence.created_at.desc(), Evidence.id.desc())
+        .limit(1)
+    ).mappings().first()
+
+    if evidence_row is None:
+        return None
+
+    attachment_rows = db.execute(
+        select(
             EvidenceFile.id.label("attachment_id"),
             EvidenceFile.type.label("attachment_type"),
             EvidenceFile.url.label("attachment_url"),
             EvidenceFile.mime_type.label("attachment_mime_type"),
             EvidenceFile.file_name.label("attachment_file_name"),
         )
-        .outerjoin(EvidenceFile, EvidenceFile.evidence_id == Evidence.id)
-        .where(Evidence.goal_id == goal_id)
-        .order_by(Evidence.created_at.desc(), Evidence.id.desc())
-        .limit(1)
-    ).mappings().first()
-
-    if row is None:
-        return None
-
-    attachment = None
-    if row["attachment_id"] is not None:
-        attachment = EvidenceAttachmentDto(
+        .where(EvidenceFile.evidence_id == evidence_row["evidence_id"])
+        .order_by(EvidenceFile.created_at.asc(), EvidenceFile.id.asc())
+    ).mappings().all()
+    attachments = [
+        EvidenceAttachmentDto(
             id=row["attachment_id"],
             type=row["attachment_type"],
             url=row["attachment_url"],
             mime_type=row["attachment_mime_type"],
             file_name=row["attachment_file_name"],
         )
+        for row in attachment_rows
+    ]
 
     return LatestEvidenceDto(
-        id=row["evidence_id"],
-        goal_id=row["goal_id"],
-        submitted_by_user_id=row["submitted_by_user_id"],
-        description=row["description"],
-        created_at=row["created_at"],
-        attachment=attachment,
+        id=evidence_row["evidence_id"],
+        goal_id=evidence_row["goal_id"],
+        submitted_by_user_id=evidence_row["submitted_by_user_id"],
+        description=evidence_row["description"],
+        created_at=evidence_row["created_at"],
+        attachment=attachments[0] if attachments else None,
+        attachments=attachments,
     )
 
 

@@ -72,6 +72,8 @@ abstract class EvidenceModel with _$EvidenceModel {
     submittedByUserId: submittedByUserId,
     description: description,
     createdAt: createdAt,
-    attachment: attachment?.toEntity(),
+    attachments: attachment == null
+        ? const <EvidenceAttachment>[]
+        : <EvidenceAttachment>[attachment!.toEntity()],
   );
 }

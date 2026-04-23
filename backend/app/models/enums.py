@@ -9,7 +9,6 @@ class GoalStatus(str, Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
     FAILED = "failed"
-    CANCELLED = "cancelled"
 
 
 class BetSide(str, Enum):

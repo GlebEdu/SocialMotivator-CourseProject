@@ -13,15 +13,17 @@ class HomeShell extends StatelessWidget {
     final selectedTab = homeTabs[currentIndex];
 
     return Scaffold(
-      appBar: AppBar(title: Text(selectedTab.title)),
+      appBar: AppBar(title: Text(_titleForTab(selectedTab.item))),
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: currentIndex,
         onDestinationSelected: (index) => context.go(homeTabs[index].route),
         destinations: homeTabs
             .map(
-              (tab) =>
-                  NavigationDestination(icon: Icon(tab.icon), label: tab.label),
+              (tab) => NavigationDestination(
+                icon: Icon(tab.icon),
+                label: _labelForTab(tab.item),
+              ),
             )
             .toList(growable: false),
       ),
@@ -33,47 +35,44 @@ const homeTabs = <HomeTab>[
   HomeTab(
     item: HomeTabItem.myGoals,
     route: '/my-goals',
-    label: 'My Goals',
     icon: Icons.flag_outlined,
-    title: 'My Goals',
   ),
   HomeTab(
     item: HomeTabItem.discover,
     route: '/discover',
-    label: 'Discover',
     icon: Icons.explore_outlined,
-    title: 'Discover',
   ),
   HomeTab(
     item: HomeTabItem.arbitration,
     route: '/arbitration',
-    label: 'Arbitration',
     icon: Icons.balance_outlined,
-    title: 'Arbitration',
   ),
   HomeTab(
     item: HomeTabItem.profile,
     route: '/profile',
-    label: 'Profile',
     icon: Icons.person_outline,
-    title: 'Profile',
   ),
 ];
 
 class HomeTab {
-  const HomeTab({
-    required this.item,
-    required this.route,
-    required this.label,
-    required this.icon,
-    required this.title,
-  });
+  const HomeTab({required this.item, required this.route, required this.icon});
 
   final HomeTabItem item;
   final String route;
-  final String label;
   final IconData icon;
-  final String title;
 }
 
 enum HomeTabItem { myGoals, discover, arbitration, profile }
+
+String _labelForTab(HomeTabItem item) {
+  return switch (item) {
+    HomeTabItem.myGoals => 'Мои цели',
+    HomeTabItem.discover => 'Обзор',
+    HomeTabItem.arbitration => 'Арбитраж',
+    HomeTabItem.profile => 'Профиль',
+  };
+}
+
+String _titleForTab(HomeTabItem item) {
+  return _labelForTab(item);
+}

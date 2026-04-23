@@ -18,7 +18,7 @@ class GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deadlineText = goal.deadline == null
-        ? 'No deadline'
+        ? 'Без срока'
         : _formatDate(goal.deadline!);
 
     return Card(
@@ -83,7 +83,7 @@ class GoalCard extends StatelessWidget {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }
 
@@ -113,7 +113,6 @@ class _GoalStatusChip extends StatelessWidget {
       GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
       GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
       GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
-      GoalStatus.cancelled => (Colors.grey.shade200, Colors.grey.shade700),
     };
 
     return Container(
@@ -135,15 +134,13 @@ class _GoalStatusChip extends StatelessWidget {
   String _labelForStatus(GoalStatus status) {
     switch (status) {
       case GoalStatus.inReview:
-        return 'In Review';
+        return 'На проверке';
       case GoalStatus.active:
-        return 'Active';
+        return 'Активна';
       case GoalStatus.completed:
-        return 'Completed';
+        return 'Выполнена';
       case GoalStatus.failed:
-        return 'Failed';
-      case GoalStatus.cancelled:
-        return 'Cancelled';
+        return 'Провалена';
     }
   }
 }

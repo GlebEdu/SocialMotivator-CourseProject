@@ -33,15 +33,15 @@ class GoalDetailsScreen extends ConsumerWidget {
             }
           },
         ),
-        title: const Text('Goal Details'),
+        title: const Text('Детали цели'),
       ),
       body: goalAsync.when(
         data: (goal) {
           if (goal == null) {
-            return const _GoalDetailsMessage(
+            return _GoalDetailsMessage(
               icon: Icons.search_off_outlined,
-              title: 'Goal not found',
-              description: 'This goal is no longer available.',
+              title: 'Цель не найдена',
+              description: 'Эта цель больше недоступна.',
             );
           }
 
@@ -69,7 +69,7 @@ class GoalDetailsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _GoalDetailsMessage(
           icon: Icons.error_outline,
-          title: 'Could not load goal',
+          title: 'Не удалось загрузить цель',
           description: error.toString(),
         ),
       ),
@@ -95,7 +95,7 @@ class _GoalDetailsBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final deadlineText = goal.deadline == null
-        ? 'No deadline'
+        ? 'Без срока'
         : _formatDate(goal.deadline!);
 
     return ListView(
@@ -112,7 +112,7 @@ class _GoalDetailsBody extends StatelessWidget {
         Card(
           child: ListTile(
             leading: const Icon(Icons.event_outlined),
-            title: const Text('Deadline'),
+            title: const Text('Срок'),
             subtitle: Text(deadlineText),
           ),
         ),
@@ -123,7 +123,7 @@ class _GoalDetailsBody extends StatelessWidget {
           FilledButton.icon(
             onPressed: () => context.push('/goals/${goal.id}/evidence'),
             icon: const Icon(Icons.upload_file_outlined),
-            label: const Text('Submit Evidence'),
+            label: const Text('Отправить доказательство'),
           ),
         ],
         if (showBetPanel) ...<Widget>[
@@ -137,7 +137,7 @@ class _GoalDetailsBody extends StatelessWidget {
   String _formatDate(DateTime value) {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
-    return '${value.year}-$month-$day';
+    return '$day.$month.${value.year}';
   }
 }
 
@@ -157,7 +157,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  'Bet Activity',
+                  'Активность ставок',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 16),
@@ -172,32 +172,29 @@ class _GoalBetSummaryCard extends StatelessWidget {
                         SizedBox(
                           width: itemWidth,
                           child: _GoalDetailsMetricCard(
-                            label: 'Total pool',
-                            value:
-                                '${summary.totalPool.toStringAsFixed(0)} Coins',
+                            label: 'Общий банк',
+                            value: _coins(summary.totalPool),
                           ),
                         ),
                         SizedBox(
                           width: itemWidth,
                           child: _GoalDetailsMetricCard(
-                            label: 'Bets placed',
+                            label: 'Ставок',
                             value: summary.goalBetsCount.toString(),
                           ),
                         ),
                         SizedBox(
                           width: itemWidth,
                           child: _GoalDetailsMetricCard(
-                            label: 'For goal',
-                            value:
-                                '${summary.forPool.toStringAsFixed(0)} Coins',
+                            label: 'За выполнение',
+                            value: _coins(summary.forPool),
                           ),
                         ),
                         SizedBox(
                           width: itemWidth,
                           child: _GoalDetailsMetricCard(
-                            label: 'Against goal',
-                            value:
-                                '${summary.againstPool.toStringAsFixed(0)} Coins',
+                            label: 'Против выполнения',
+                            value: _coins(summary.againstPool),
                           ),
                         ),
                       ],
@@ -209,7 +206,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                   _CurrentUserBetSummary(summary: summary)
                 else
                   Text(
-                    'You have not placed a bet on this goal yet.',
+                    'Вы ещё не сделали ставку на эту цель.',
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
               ],
@@ -217,18 +214,18 @@ class _GoalBetSummaryCard extends StatelessWidget {
           ),
         );
       },
-      loading: () => const Card(
+      loading: () => Card(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Row(
             children: <Widget>[
-              SizedBox(
+              const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              SizedBox(width: 12),
-              Expanded(child: Text('Loading bet activity...')),
+              const SizedBox(width: 12),
+              const Expanded(child: Text('Загрузка ставок...')),
             ],
           ),
         ),
@@ -236,11 +233,13 @@ class _GoalBetSummaryCard extends StatelessWidget {
       error: (error, _) => Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Text('Could not load bet activity: $error'),
+          child: Text('Не удалось загрузить ставки: $error'),
         ),
       ),
     );
   }
+
+  String _coins(num amount) => '${amount.toStringAsFixed(0)} монет';
 }
 
 class _CurrentUserBetSummary extends StatelessWidget {
@@ -251,17 +250,17 @@ class _CurrentUserBetSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final predictionLabel = summary.isCurrentUserOnlyFor
-        ? 'You are betting for this goal'
+        ? 'Вы ставите за выполнение этой цели'
         : summary.isCurrentUserOnlyAgainst
-        ? 'You are betting against this goal'
-        : 'You have bets on both sides';
+        ? 'Вы ставите против выполнения этой цели'
+        : 'У вас есть ставки на обе стороны';
 
     final detailLabel = summary.isCurrentUserOnlyFor
-        ? '${summary.currentUserTotal.toStringAsFixed(0)} Coins on For'
+        ? '${summary.currentUserTotal.toStringAsFixed(0)} монет за'
         : summary.isCurrentUserOnlyAgainst
-        ? '${summary.currentUserTotal.toStringAsFixed(0)} Coins on Against'
-        : 'For ${summary.currentUserForTotal.toStringAsFixed(0)} Coins, '
-              'Against ${summary.currentUserAgainstTotal.toStringAsFixed(0)} Coins';
+        ? '${summary.currentUserTotal.toStringAsFixed(0)} монет против'
+        : 'За: ${summary.currentUserForTotal.toStringAsFixed(0)} монет, '
+              'против: ${summary.currentUserAgainstTotal.toStringAsFixed(0)} монет';
 
     return Container(
       width: double.infinity,
@@ -330,7 +329,6 @@ class _GoalStatusBanner extends StatelessWidget {
       GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
       GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
       GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
-      GoalStatus.cancelled => (Colors.grey.shade200, Colors.grey.shade700),
     };
 
     return Chip(
@@ -350,15 +348,13 @@ class _GoalStatusBanner extends StatelessWidget {
   String _labelForStatus(GoalStatus status) {
     switch (status) {
       case GoalStatus.inReview:
-        return 'In Review';
+        return 'На проверке';
       case GoalStatus.active:
-        return 'Active';
+        return 'Активна';
       case GoalStatus.completed:
-        return 'Completed';
+        return 'Выполнена';
       case GoalStatus.failed:
-        return 'Failed';
-      case GoalStatus.cancelled:
-        return 'Cancelled';
+        return 'Провалена';
     }
   }
 }

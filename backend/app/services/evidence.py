@@ -24,8 +24,10 @@ from app.schemas.evidence import (
     SubmitEvidenceResponse,
 )
 from app.schemas.read_models import EvidenceAttachmentDto, LatestEvidenceDto
+from app.services.goal_resolution import expire_overdue_goals
 
 ARBITRATOR_COUNT = 3
+DEFAULT_EVIDENCE_COMMENT = "No comment provided."
 
 
 def create_evidence_upload(
@@ -91,6 +93,7 @@ def submit_goal_evidence(
     current_user_id: UUID,
     payload: SubmitEvidenceRequest,
 ) -> SubmitEvidenceResponse:
+    expire_overdue_goals(db)
     try:
         goal = db.get(Goal, goal_id)
         if goal is None:
@@ -111,28 +114,34 @@ def submit_goal_evidence(
                 detail="Goal cannot accept evidence in its current state.",
             )
 
-        upload = _read_upload_metadata(payload.attachment.upload_id)
-        _ensure_upload_owner(upload, current_user_id)
-        _validate_upload_for_submission(upload, payload)
+        uploads = []
+        for attachment in payload.attachments:
+            upload = _read_upload_metadata(attachment.upload_id)
+            _ensure_upload_owner(upload, current_user_id)
+            _validate_upload_for_submission(upload, attachment)
+            uploads.append((attachment, upload))
 
         evidence = Evidence(
             goal_id=goal.id,
             submitted_by_user_id=current_user_id,
-            description=payload.description,
+            description=payload.description or DEFAULT_EVIDENCE_COMMENT,
         )
         db.add(evidence)
         db.flush()
 
-        evidence_file = EvidenceFile(
-            evidence_id=evidence.id,
-            type=payload.attachment.type,
-            storage_key=upload["relative_path"],
-            url=upload["file_url"],
-            mime_type=upload.get("mime_type"),
-            file_name=upload.get("file_name"),
-            file_size_bytes=upload.get("file_size_bytes"),
-        )
-        db.add(evidence_file)
+        evidence_files = []
+        for attachment, upload in uploads:
+            evidence_file = EvidenceFile(
+                evidence_id=evidence.id,
+                type=attachment.type,
+                storage_key=upload["relative_path"],
+                url=upload["file_url"],
+                mime_type=upload.get("mime_type"),
+                file_name=upload.get("file_name"),
+                file_size_bytes=upload.get("file_size_bytes"),
+            )
+            db.add(evidence_file)
+            evidence_files.append(evidence_file)
         db.flush()
 
         arbitration_case = _get_pending_arbitration_case(db, goal.id)
@@ -141,7 +150,7 @@ def submit_goal_evidence(
                 db=db,
                 goal=goal,
                 created_by_user_id=current_user_id,
-                reason=payload.description,
+                reason=payload.description or DEFAULT_EVIDENCE_COMMENT,
             )
 
         goal.status = GoalStatus.IN_REVIEW
@@ -153,7 +162,19 @@ def submit_goal_evidence(
         db.rollback()
         raise
 
-    _mark_upload_consumed(payload.attachment.upload_id)
+    for attachment in payload.attachments:
+        _mark_upload_consumed(attachment.upload_id)
+
+    attachments = [
+        EvidenceAttachmentDto(
+            id=evidence_file.id,
+            type=evidence_file.type,
+            url=evidence_file.url,
+            mime_type=evidence_file.mime_type,
+            file_name=evidence_file.file_name,
+        )
+        for evidence_file in evidence_files
+    ]
 
     return SubmitEvidenceResponse(
         evidence=LatestEvidenceDto(
@@ -162,13 +183,8 @@ def submit_goal_evidence(
             submitted_by_user_id=evidence.submitted_by_user_id,
             description=evidence.description,
             created_at=evidence.created_at,
-            attachment=EvidenceAttachmentDto(
-                id=evidence_file.id,
-                type=evidence_file.type,
-                url=evidence_file.url,
-                mime_type=evidence_file.mime_type,
-                file_name=evidence_file.file_name,
-            ),
+            attachment=attachments[0] if attachments else None,
+            attachments=attachments,
         ),
         goal_status=goal.status,
         arbitration_case_id=arbitration_case.id,
@@ -232,7 +248,7 @@ def _get_pending_arbitration_case(db: Session, goal_id: UUID) -> ArbitrationCase
 
 def _validate_upload_for_submission(
     upload: dict[str, Any],
-    payload: SubmitEvidenceRequest,
+    attachment: "SubmitEvidenceAttachmentRequest",
 ) -> None:
     if upload.get("consumed"):
         raise HTTPException(
@@ -246,13 +262,13 @@ def _validate_upload_for_submission(
             detail="Upload content has not been received yet.",
         )
 
-    if upload["type"] != payload.attachment.type.value:
+    if upload["type"] != attachment.type.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Attachment type does not match the upload slot.",
         )
 
-    if upload["file_name"] != _sanitize_file_name(payload.attachment.file_name):
+    if upload["file_name"] != _sanitize_file_name(attachment.file_name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Attachment file name does not match the upload slot.",

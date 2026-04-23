@@ -17,11 +17,11 @@ class MyGoalsScreen extends ConsumerWidget {
         myGoals.when(
           data: (goals) {
             if (goals.isEmpty) {
-              return const _GoalsFeedMessage(
+              return _GoalsFeedMessage(
                 icon: Icons.flag_outlined,
-                title: 'No goals yet',
+                title: 'Пока нет целей',
                 description:
-                    'Create your first goal to start tracking progress.',
+                    'Создайте первую цель, чтобы начать отслеживать прогресс.',
               );
             }
 
@@ -44,7 +44,7 @@ class MyGoalsScreen extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _GoalsFeedMessage(
             icon: Icons.error_outline,
-            title: 'Could not load your goals',
+            title: 'Не удалось загрузить ваши цели',
             description: error.toString(),
           ),
         ),
@@ -54,7 +54,7 @@ class MyGoalsScreen extends ConsumerWidget {
           child: FloatingActionButton.extended(
             onPressed: () => context.push('/my-goals/create'),
             icon: const Icon(Icons.add),
-            label: const Text('Create'),
+            label: const Text('Создать'),
           ),
         ),
       ],

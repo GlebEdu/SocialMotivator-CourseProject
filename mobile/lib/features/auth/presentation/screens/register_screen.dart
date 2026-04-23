@@ -47,33 +47,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final authState = ref.watch(authControllerProvider);
 
     return AuthFormCard(
-      title: 'Register',
-      submitLabel: 'Register',
+      title: 'Регистрация',
+      submitLabel: 'Регистрация',
       isSubmitting: authState.isLoading,
       onSubmit: _submit,
       footer: TextButton(
         onPressed: authState.isLoading ? null : () => context.go('/login'),
-        child: const Text('Already have an account? Login'),
+        child: const Text('Уже есть аккаунт? Войти'),
       ),
       children: <Widget>[
         TextField(
           controller: _displayNameController,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Display Name'),
+          decoration: const InputDecoration(labelText: 'Имя'),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
           autofillHints: const <String>[AutofillHints.email],
-          decoration: const InputDecoration(labelText: 'Email'),
+          decoration: const InputDecoration(labelText: 'Почта'),
         ),
         const SizedBox(height: 16),
         TextField(
           controller: _passwordController,
           obscureText: true,
           autofillHints: const <String>[AutofillHints.newPassword],
-          decoration: const InputDecoration(labelText: 'Password'),
+          decoration: const InputDecoration(labelText: 'Пароль'),
         ),
       ],
     );
@@ -94,7 +94,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Enter a display name, valid email, and password.'),
+            content: Text('Введите имя, корректную почту и пароль.'),
           ),
         );
       return;
@@ -106,7 +106,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
-            content: Text('Password must be at least 8 characters long.'),
+            content: Text('Пароль должен быть не короче 8 символов.'),
           ),
         );
       return;

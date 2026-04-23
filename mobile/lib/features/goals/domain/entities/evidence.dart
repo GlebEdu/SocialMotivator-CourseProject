@@ -6,14 +6,20 @@ class Evidence {
   final String submittedByUserId;
   final String description;
   final DateTime createdAt;
-  final EvidenceAttachment? attachment;
+  final List<EvidenceAttachment> attachments;
 
-  const Evidence({
+  Evidence({
     required this.id,
     required this.goalId,
     required this.submittedByUserId,
     required this.description,
     required this.createdAt,
-    this.attachment,
-  });
+    List<EvidenceAttachment>? attachments,
+    EvidenceAttachment? attachment,
+  }) : attachments =
+           attachments ??
+           (attachment == null ? const <EvidenceAttachment>[] : [attachment]);
+
+  EvidenceAttachment? get attachment =>
+      attachments.isEmpty ? null : attachments.first;
 }

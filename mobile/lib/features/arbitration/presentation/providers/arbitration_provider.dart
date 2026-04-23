@@ -54,7 +54,7 @@ class VoteArbitrationController extends AutoDisposeAsyncNotifier<void> {
       arbitrationCaseDetailsProvider(caseId).future,
     );
     if (caseDetails == null) {
-      throw StateError('Arbitration case $caseId was not found.');
+      throw StateError('Дело арбитража $caseId не найдено.');
     }
 
     state = const AsyncLoading();

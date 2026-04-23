@@ -43,11 +43,11 @@ class GoalEngine {
     final goal = await _requireGoal(input.goalId);
 
     if (goal.status != GoalStatus.active) {
-      throw StateError('Bets can only be placed on active goals.');
+      throw StateError('Ставки можно делать только на активные цели.');
     }
 
     if (_hasDeadlinePassed(goal.deadline, DateTime.now())) {
-      throw StateError('Bets can only be placed before the deadline.');
+      throw StateError('Ставки можно делать только до наступления срока.');
     }
 
     return _placeBetForUser(user: currentUser, input: input);
@@ -59,22 +59,22 @@ class GoalEngine {
       vote.caseId,
     );
     if (arbitrationCase == null) {
-      throw StateError('Arbitration case ${vote.caseId} was not found.');
+      throw StateError('Дело арбитража ${vote.caseId} не найдено.');
     }
 
     if (arbitrationCase.decision != ArbitrationDecision.pending) {
-      throw StateError('Voting is closed for arbitration case ${vote.caseId}.');
+      throw StateError('Голосование по делу ${vote.caseId} уже закрыто.');
     }
 
     if (vote.voterUserId != currentUser.id) {
       throw StateError(
-        'Arbitration votes must be submitted by the current user.',
+        'Голос арбитража должен отправлять текущий пользователь.',
       );
     }
 
     if (!arbitrationCase.arbitratorUserIds.contains(vote.voterUserId)) {
       throw StateError(
-        'User ${vote.voterUserId} is not assigned to this arbitration case.',
+        'Пользователь ${vote.voterUserId} не назначен на это дело арбитража.',
       );
     }
 
@@ -86,7 +86,7 @@ class GoalEngine {
     );
     if (hasAlreadyVoted) {
       throw StateError(
-        'User ${vote.voterUserId} has already voted on this case.',
+        'Пользователь ${vote.voterUserId} уже голосовал по этому делу.',
       );
     }
 
@@ -140,11 +140,9 @@ class GoalEngine {
     required String goalId,
     required GoalStatus status,
   }) async {
-    if (status != GoalStatus.completed &&
-        status != GoalStatus.failed &&
-        status != GoalStatus.cancelled) {
+    if (status != GoalStatus.completed && status != GoalStatus.failed) {
       throw StateError(
-        'Goals can only be resolved as completed, failed, or cancelled.',
+        'Цель можно завершить только как выполненную или проваленную.',
       );
     }
 
@@ -259,11 +257,11 @@ class GoalEngine {
     required PlaceBetInput input,
   }) async {
     if (input.amount <= 0) {
-      throw StateError('Bet amount must be greater than zero.');
+      throw StateError('Сумма ставки должна быть больше нуля.');
     }
 
     if (user.balance < input.amount) {
-      throw StateError('User ${user.id} does not have enough balance.');
+      throw StateError('У пользователя ${user.id} недостаточно баланса.');
     }
 
     final bet = await _betsRepository.placeBet(input);
@@ -284,7 +282,7 @@ class GoalEngine {
   Future<User> _requireCurrentUser() async {
     final currentUser = await _authRepository.getCurrentUser();
     if (currentUser == null) {
-      throw StateError('No active user session found.');
+      throw StateError('Активная пользовательская сессия не найдена.');
     }
 
     return currentUser;
@@ -293,7 +291,7 @@ class GoalEngine {
   Future<Goal> _requireGoal(String goalId) async {
     final goal = await _goalsRepository.getGoalById(goalId);
     if (goal == null) {
-      throw StateError('Goal $goalId was not found.');
+      throw StateError('Цель $goalId не найдена.');
     }
 
     return goal;
@@ -302,7 +300,7 @@ class GoalEngine {
   Future<User> _requireUser(String userId) async {
     final user = await _profileRepository.getUserProfile(userId);
     if (user == null) {
-      throw StateError('User $userId was not found.');
+      throw StateError('Пользователь $userId не найден.');
     }
 
     return user;
@@ -333,7 +331,6 @@ class GoalEngine {
         return BetSide.againstGoal;
       case GoalStatus.inReview:
       case GoalStatus.active:
-      case GoalStatus.cancelled:
         return null;
     }
   }
@@ -345,7 +342,9 @@ class GoalEngine {
       case ArbitrationDecision.rejected:
         return GoalStatus.failed;
       case ArbitrationDecision.pending:
-        throw StateError('Pending arbitration decision cannot resolve a goal.');
+        throw StateError(
+          'Ожидающее решение арбитража не может завершить цель.',
+        );
     }
   }
 }
