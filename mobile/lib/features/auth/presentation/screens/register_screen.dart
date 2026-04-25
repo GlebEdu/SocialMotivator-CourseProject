@@ -59,7 +59,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         TextField(
           controller: _displayNameController,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Имя'),
+          decoration: const InputDecoration(labelText: 'Отображаемое имя'),
         ),
         const SizedBox(height: 16),
         TextField(

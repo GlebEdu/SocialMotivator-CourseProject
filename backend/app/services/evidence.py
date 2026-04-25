@@ -27,7 +27,7 @@ from app.schemas.read_models import EvidenceAttachmentDto, LatestEvidenceDto
 from app.services.goal_resolution import expire_overdue_goals
 
 ARBITRATOR_COUNT = 3
-DEFAULT_EVIDENCE_COMMENT = "No comment provided."
+DEFAULT_EVIDENCE_COMMENT = "Комментарий не оставлен."
 
 
 def create_evidence_upload(

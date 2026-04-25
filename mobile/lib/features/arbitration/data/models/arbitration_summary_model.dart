@@ -30,12 +30,15 @@ class ArbitrationCaseSummaryModel {
   });
 
   factory ArbitrationCaseSummaryModel.fromJson(Map<String, dynamic> json) {
+    final rawReason = json['reason'] as String? ?? '';
     return ArbitrationCaseSummaryModel(
       id: json['id'] as String,
       goalId: json['goalId'] as String,
-      goalTitle: json['goalTitle'] as String? ?? 'Goal',
+      goalTitle: json['goalTitle'] as String? ?? 'Цель',
       decision: ArbitrationDecision.values.byName(json['decision'] as String),
-      reason: json['reason'] as String,
+      reason: rawReason == 'No comment provided.'
+          ? 'Комментарий не оставлен.'
+          : rawReason,
       createdAt: DateTime.parse(json['createdAt'] as String),
       resolvedAt: json['resolvedAt'] == null
           ? null

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/widgets/brand_backdrop.dart';
+import '../../../../app/widgets/glowing_gradient_panel.dart';
 import '../../data/models/arbitration_details_model.dart';
 import '../../../goals/domain/entities/evidence_attachment.dart';
 import '../../../goals/presentation/widgets/evidence_attachment_preview.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../profile/presentation/widgets/author_summary_card.dart';
 import '../../domain/entities/arbitration_decision.dart';
-import '../../domain/entities/arbitration_vote.dart';
 import '../providers/arbitration_provider.dart';
 
 class ArbitrationCaseScreen extends ConsumerWidget {
@@ -22,37 +23,40 @@ class ArbitrationCaseScreen extends ConsumerWidget {
       arbitrationCaseDetailsProvider(caseId),
     );
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              context.pop();
-            } else {
-              context.go('/arbitration');
-            }
-          },
+    return BrandBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/arbitration');
+              }
+            },
+          ),
+          title: const Text('Дело арбитража'),
         ),
-        title: const Text('Дело арбитража'),
-      ),
-      body: arbitrationCaseAsync.when(
-        data: (caseDetails) {
-          if (caseDetails == null) {
-            return const _ArbitrationCaseMessage(
-              icon: Icons.search_off_outlined,
-              title: 'Дело не найдено',
-              description: 'Это дело арбитража больше недоступно.',
-            );
-          }
+        body: arbitrationCaseAsync.when(
+          data: (caseDetails) {
+            if (caseDetails == null) {
+              return const _ArbitrationCaseMessage(
+                icon: Icons.search_off_outlined,
+                title: 'Дело не найдено',
+                description: 'Это дело арбитража больше недоступно.',
+              );
+            }
 
-          return _ArbitrationCaseBody(caseDetails: caseDetails);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ArbitrationCaseMessage(
-          icon: Icons.error_outline,
-          title: 'Не удалось загрузить дело',
-          description: error.toString(),
+            return _ArbitrationCaseBody(caseDetails: caseDetails);
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _ArbitrationCaseMessage(
+            icon: Icons.error_outline,
+            title: 'Не удалось загрузить дело',
+            description: error.toString(),
+          ),
         ),
       ),
     );
@@ -124,65 +128,15 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.gavel_outlined),
-            title: Text('Дело ${caseDetails.arbitrationCase.id}'),
-            subtitle: Text(caseDetails.goal.title),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  'Текущий статус',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                _DecisionChip(decision: caseDetails.arbitrationCase.decision),
-                const SizedBox(height: 16),
-                Text(
-                  'Создано: ${_formatDate(caseDetails.arbitrationCase.createdAt)}',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                if (caseDetails.arbitrationCase.resolvedAt != null) ...<Widget>[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Решено: ${_formatDate(caseDetails.arbitrationCase.resolvedAt!)}',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
+        _GoalReviewCard(caseDetails: caseDetails),
+        const SizedBox(height: 16),
         AuthorSummaryCard(authorSummary: authorSummary),
         const SizedBox(height: 12),
-        _GoalReviewCard(caseDetails: caseDetails),
-        const SizedBox(height: 12),
         _EvidenceReviewCard(caseDetails: caseDetails),
-        const SizedBox(height: 12),
-        _AssignmentsCard(caseDetails: caseDetails),
-        const SizedBox(height: 12),
-        _VotesCard(caseDetails: caseDetails),
         const SizedBox(height: 16),
         if (canVote)
           Row(
             children: <Widget>[
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: voteState.isLoading
-                      ? null
-                      : () => _submitVote(ArbitrationDecision.rejected),
-                  child: const Text('Отклонить / провалена'),
-                ),
-              ),
-              const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
                   onPressed: voteState.isLoading
@@ -197,6 +151,23 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
                       : const Text('Одобрить / выполнена'),
                 ),
               ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFC96B5C),
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: const Color(
+                      0xFFC96B5C,
+                    ).withValues(alpha: 0.4),
+                    disabledForegroundColor: Colors.white70,
+                  ),
+                  onPressed: voteState.isLoading
+                      ? null
+                      : () => _submitVote(ArbitrationDecision.rejected),
+                  child: const Text('Отклонить / провалена'),
+                ),
+              ),
             ],
           )
         else
@@ -205,7 +176,7 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
                 ? caseDetails.viewerContext.hasVoted
                       ? 'Ваш голос записан. Ожидаем остальных арбитров.'
                       : 'Голосование доступно только назначенным арбитрам.'
-                : 'Это дело уже решено.',
+                : 'Верифицирование цели завершено.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
       ],
@@ -221,12 +192,6 @@ class _ArbitrationCaseBodyState extends ConsumerState<_ArbitrationCaseBody> {
           decision: decision,
         );
   }
-
-  String _formatDate(DateTime value) {
-    final month = value.month.toString().padLeft(2, '0');
-    final day = value.day.toString().padLeft(2, '0');
-    return '$day.$month.${value.year}';
-  }
 }
 
 class _GoalReviewCard extends StatelessWidget {
@@ -240,39 +205,57 @@ class _GoalReviewCard extends StatelessWidget {
         ? 'Без срока'
         : _formatDate(caseDetails.goal.deadline!);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Цель для проверки',
-              style: Theme.of(context).textTheme.titleMedium,
+    return GlowingGradientPanel(
+      radius: 28,
+      padding: const EdgeInsets.all(22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Цель для проверки',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            caseDetails.goal.title,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 12),
-            Text(
-              caseDetails.goal.title,
-              style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            caseDetails.goal.description,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Colors.white.withValues(alpha: 0.82),
             ),
-            const SizedBox(height: 12),
-            Text(
-              caseDetails.goal.description,
-              style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
-            const SizedBox(height: 16),
-            Row(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                const Icon(Icons.event_outlined, size: 18),
+                const Icon(Icons.event_outlined, size: 18, color: Colors.white),
                 const SizedBox(width: 8),
                 Text(
                   deadlineText,
-                  style: Theme.of(context).textTheme.bodySmall,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -314,11 +297,6 @@ class _EvidenceReviewCard extends StatelessWidget {
               )
             else
               for (final entry in attachments.indexed) ...<Widget>[
-                Text(
-                  _attachmentLabel(context, entry.$2, entry.$1),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
                 EvidenceAttachmentPreview(attachment: entry.$2),
                 if (entry.$1 != attachments.length - 1)
                   const SizedBox(height: 16),
@@ -353,17 +331,6 @@ class _EvidenceReviewCard extends StatelessWidget {
     );
   }
 
-  String _attachmentLabel(
-    BuildContext context,
-    EvidenceAttachment attachment,
-    int index,
-  ) {
-    final type = attachment.type == EvidenceAttachmentType.image
-        ? 'Фотофайл'
-        : 'Видеофайл';
-    return '$type ${index + 1}';
-  }
-
   String _attachmentsSubmitted(int count) {
     return '$count ${_plural(count, 'файл', 'файла', 'файлов')} отправлено';
   }
@@ -384,193 +351,6 @@ class _EvidenceReviewCard extends StatelessWidget {
       return few;
     }
     return many;
-  }
-}
-
-class _AssignmentsCard extends StatelessWidget {
-  const _AssignmentsCard({required this.caseDetails});
-
-  final ArbitrationCaseDetailsModel caseDetails;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'Назначенные арбитры',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            ..._buildAssignments(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildAssignments(BuildContext context) {
-    return List<Widget>.generate(caseDetails.assignments.length, (index) {
-      final assignment = caseDetails.assignments[index];
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: index == caseDetails.assignments.length - 1 ? 0 : 12,
-        ),
-        child: Row(
-          children: <Widget>[
-            const Icon(Icons.person_outline, size: 18),
-            const SizedBox(width: 8),
-            Expanded(child: Text(assignment.displayName)),
-            Text(
-              assignment.hasVoted ? 'Проголосовал' : 'Ожидает',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      );
-    });
-  }
-}
-
-class _VotesCard extends StatelessWidget {
-  const _VotesCard({required this.caseDetails});
-
-  final ArbitrationCaseDetailsModel caseDetails;
-
-  @override
-  Widget build(BuildContext context) {
-    final votes = caseDetails.votes;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              'История голосов',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            if (votes.isEmpty)
-              Text(
-                'Пока нет отправленных голосов.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              )
-            else
-              ..._buildVotes(context, votes),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildVotes(BuildContext context, List<ArbitrationVote> votes) {
-    return List<Widget>.generate(votes.length, (index) {
-      final vote = votes[index];
-      return Padding(
-        padding: EdgeInsets.only(bottom: index == votes.length - 1 ? 0 : 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _DecisionChip(decision: vote.decision),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(_displayNameForVote(vote.voterUserId)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateTime(vote.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  if (vote.comment != null && vote.comment!.trim().isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: Text(
-                        vote.comment!,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    });
-  }
-
-  String _displayNameForVote(String userId) {
-    for (final assignment in caseDetails.assignments) {
-      if (assignment.userId == userId) {
-        return assignment.displayName;
-      }
-    }
-    return userId;
-  }
-
-  String _formatDateTime(DateTime value) {
-    final month = value.month.toString().padLeft(2, '0');
-    final day = value.day.toString().padLeft(2, '0');
-    final hour = value.hour.toString().padLeft(2, '0');
-    final minute = value.minute.toString().padLeft(2, '0');
-    return '$day.$month.${value.year} $hour:$minute';
-  }
-}
-
-class _DecisionChip extends StatelessWidget {
-  const _DecisionChip({required this.decision});
-
-  final ArbitrationDecision decision;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final (backgroundColor, foregroundColor) = switch (decision) {
-      ArbitrationDecision.pending => (
-        colorScheme.secondaryContainer,
-        colorScheme.onSecondaryContainer,
-      ),
-      ArbitrationDecision.approved => (
-        Colors.green.shade100,
-        Colors.green.shade900,
-      ),
-      ArbitrationDecision.rejected => (
-        Colors.red.shade100,
-        Colors.red.shade900,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        _labelForDecision(decision),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: foregroundColor,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-
-  String _labelForDecision(ArbitrationDecision decision) {
-    switch (decision) {
-      case ArbitrationDecision.pending:
-        return 'Ожидает';
-      case ArbitrationDecision.approved:
-        return 'Одобрено';
-      case ArbitrationDecision.rejected:
-        return 'Отклонено';
-    }
   }
 }
 

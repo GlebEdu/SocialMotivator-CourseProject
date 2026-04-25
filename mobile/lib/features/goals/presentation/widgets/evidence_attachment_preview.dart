@@ -9,8 +9,8 @@ class EvidenceAttachmentPreview extends StatefulWidget {
   const EvidenceAttachmentPreview({
     required this.attachment,
     this.height = 220,
-    this.emptyTitle = 'No attachment selected',
-    this.emptyDescription = 'Add a photo or video to verify this goal.',
+    this.emptyTitle = 'Вложение не выбрано',
+    this.emptyDescription = 'Добавьте фото или видео, чтобы подтвердить цель.',
     super.key,
   });
 

@@ -36,7 +36,7 @@ final goalsRepositoryProvider = Provider<GoalsRepository>((ref) {
 final goalsReadRepositoryProvider = Provider<ApiGoalsRepository>((ref) {
   final repository = ref.watch(goalsRepositoryProvider);
   if (repository is! ApiGoalsRepository) {
-    throw StateError('ApiGoalsRepository is required for goals read access.');
+    throw StateError('Для чтения целей нужен ApiGoalsRepository.');
   }
   return repository;
 });
@@ -52,9 +52,7 @@ final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
 final profileReadRepositoryProvider = Provider<ApiProfileRepository>((ref) {
   final repository = ref.watch(profileRepositoryProvider);
   if (repository is! ApiProfileRepository) {
-    throw StateError(
-      'ApiProfileRepository is required for profile read access.',
-    );
+    throw StateError('Для чтения профиля нужен ApiProfileRepository.');
   }
   return repository;
 });
@@ -64,9 +62,7 @@ final arbitrationReadRepositoryProvider = Provider<ApiArbitrationRepository>((
 ) {
   final repository = ref.watch(arbitrationRepositoryProvider);
   if (repository is! ApiArbitrationRepository) {
-    throw StateError(
-      'ApiArbitrationRepository is required for arbitration read access.',
-    );
+    throw StateError('Для чтения арбитража нужен ApiArbitrationRepository.');
   }
   return repository;
 });

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_theme.dart';
+import '../../../../app/widgets/brand_backdrop.dart';
 import '../../domain/entities/create_goal_input.dart';
 import '../providers/goals_provider.dart';
 
@@ -45,70 +47,138 @@ class _CreateGoalScreenState extends ConsumerState<CreateGoalScreen> {
         ? 'Срок не выбран'
         : _formatDate(_deadline!);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              context.pop();
-            } else {
-              context.go('/my-goals');
-            }
-          },
+    return BrandBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/my-goals');
+              }
+            },
+          ),
+          title: const Text('Создать цель'),
         ),
-        title: const Text('Создать цель'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          TextField(
-            controller: _titleController,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Название'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _descriptionController,
-            textCapitalization: TextCapitalization.sentences,
-            minLines: 1,
-            maxLines: 6,
-            decoration: const InputDecoration(labelText: 'Описание'),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.event_outlined),
-              title: const Text('Срок'),
-              subtitle: Text(deadlineText),
-              trailing: TextButton(
-                onPressed: createState.isLoading ? null : _pickDeadline,
-                child: const Text('Выбрать'),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            Container(
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: HabitBetTheme.panelGradient(),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: HabitBetTheme.softShadow(),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Новая цель - новая ставка на свой успех',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Поделитесь своими серьезными намерениями с миром!',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          if (_deadline != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: createState.isLoading
-                    ? null
-                    : () => setState(() => _deadline = null),
-                child: const Text('Очистить срок'),
+            const SizedBox(height: 18),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  children: <Widget>[
+                    TextField(
+                      controller: _titleController,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(labelText: 'Название'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _descriptionController,
+                      textCapitalization: TextCapitalization.sentences,
+                      minLines: 3,
+                      maxLines: 6,
+                      decoration: const InputDecoration(labelText: 'Описание'),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: HabitBetTheme.surfaceAlt,
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                      child: Column(
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              const Icon(Icons.event_outlined),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      'Срок',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelLarge,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(deadlineText),
+                                  ],
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: createState.isLoading
+                                    ? null
+                                    : _pickDeadline,
+                                child: const Text('Выбрать'),
+                              ),
+                            ],
+                          ),
+                          if (_deadline != null) ...<Widget>[
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: createState.isLoading
+                                    ? null
+                                    : () => setState(() => _deadline = null),
+                                child: const Text('Очистить срок'),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    FilledButton(
+                      onPressed: createState.isLoading ? null : _submit,
+                      child: createState.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('Создать цель'),
+                    ),
+                  ],
+                ),
               ),
             ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: createState.isLoading ? null : _submit,
-            child: createState.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Создать цель'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_theme.dart';
+import '../../../../app/widgets/glowing_gradient_panel.dart';
 import '../../data/models/arbitration_summary_model.dart';
 import '../../domain/entities/arbitration_decision.dart';
 import '../providers/arbitration_provider.dart';
@@ -15,27 +17,32 @@ class ArbitrationListScreen extends ConsumerWidget {
 
     return arbitrationCases.when(
       data: (cases) {
-        if (cases.isEmpty) {
-          return const _ArbitrationMessage(
-            icon: Icons.balance_outlined,
-            title: 'Нет дел арбитража',
-            description: 'Здесь появятся дела, которым нужна проверка.',
-          );
-        }
-
         return RefreshIndicator(
           onRefresh: () => ref.refresh(arbitrationListProvider.future),
-          child: ListView.separated(
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
-            itemCount: cases.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final arbitrationCase = cases[index];
-              return _ArbitrationCaseCard(
-                arbitrationCase: arbitrationCase,
-                onTap: () => context.push('/arbitration/${arbitrationCase.id}'),
-              );
-            },
+            children: <Widget>[
+              const _ArbitrationHero(),
+              const SizedBox(height: 16),
+              if (cases.isEmpty)
+                const _ArbitrationMessage(
+                  icon: Icons.balance_outlined,
+                  title: 'Нет дел арбитража',
+                  description: 'Здесь появятся цели, выполнение которых надо верифицировать',
+                )
+              else
+                ...cases.map(
+                  (arbitrationCase) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _ArbitrationCaseCard(
+                      arbitrationCase: arbitrationCase,
+                      onTap: () =>
+                          context.push('/arbitration/${arbitrationCase.id}'),
+                    ),
+                  ),
+                ),
+            ],
           ),
         );
       },
@@ -44,6 +51,28 @@ class ArbitrationListScreen extends ConsumerWidget {
         icon: Icons.error_outline,
         title: 'Не удалось загрузить арбитраж',
         description: error.toString(),
+      ),
+    );
+  }
+}
+
+class _ArbitrationHero extends StatelessWidget {
+  const _ArbitrationHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return GlowingGradientPanel(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Верифицируйсте выполнение целей',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+          ),
+        ],
       ),
     );
   }
@@ -60,56 +89,80 @@ class _ArbitrationCaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+    final decisionTheme = _DecisionTheme.fromDecision(arbitrationCase.decision);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: _borderGradient(decisionTheme.foreground),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          ...HabitBetTheme.softShadow(),
+          BoxShadow(
+            color: decisionTheme.foreground.withValues(alpha: 0.12),
+            blurRadius: 20,
+            spreadRadius: -8,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(1.2, 4.2, 1.2, 1.2),
+        child: Material(
+          color: HabitBetTheme.surface.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(27),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(27),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      arbitrationCase.goalTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          arbitrationCase.goalTitle,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _DecisionChip(decision: arbitrationCase.decision),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  _DecisionChip(decision: arbitrationCase.decision),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                arbitrationCase.reason,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.schedule_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _formatDate(arbitrationCase.createdAt),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 8),
                   Text(
-                    arbitrationCase.viewerAssignment.hasVoted
-                        ? 'Голос отправлен'
-                        : 'Ожидается ваш голос',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    arbitrationCase.reason,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: HabitBetTheme.inkSoft,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      _StatusPill(
+                        icon: Icons.schedule_outlined,
+                        label: _formatDate(arbitrationCase.createdAt),
+                      ),
+                      _StatusPill(
+                        icon: arbitrationCase.viewerAssignment.hasVoted
+                            ? Icons.check_circle_outline
+                            : Icons.pending_outlined,
+                        label: arbitrationCase.viewerAssignment.hasVoted
+                            ? 'Голос отправлен'
+                            : 'Ожидается ваш голос',
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -121,6 +174,20 @@ class _ArbitrationCaseCard extends StatelessWidget {
     final day = value.day.toString().padLeft(2, '0');
     return '$day.$month.${value.year}';
   }
+
+  LinearGradient _borderGradient(Color color) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: <Color>[
+        color.withValues(alpha: 0.9),
+        color.withValues(alpha: 0.42),
+        color.withValues(alpha: 0.18),
+        color.withValues(alpha: 0.38),
+      ],
+      stops: const <double>[0, 0.18, 0.7, 1],
+    );
+  }
 }
 
 class _DecisionChip extends StatelessWidget {
@@ -130,33 +197,19 @@ class _DecisionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final (backgroundColor, foregroundColor) = switch (decision) {
-      ArbitrationDecision.pending => (
-        colorScheme.secondaryContainer,
-        colorScheme.onSecondaryContainer,
-      ),
-      ArbitrationDecision.approved => (
-        Colors.green.shade100,
-        Colors.green.shade900,
-      ),
-      ArbitrationDecision.rejected => (
-        Colors.red.shade100,
-        Colors.red.shade900,
-      ),
-    };
+    final theme = _DecisionTheme.fromDecision(decision);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: theme.background,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         _labelForDecision(decision),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: foregroundColor,
-          fontWeight: FontWeight.w600,
+          color: theme.foreground,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -171,6 +224,61 @@ class _DecisionChip extends StatelessWidget {
       case ArbitrationDecision.rejected:
         return 'Отклонено';
     }
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: HabitBetTheme.surfaceAlt.withValues(alpha: 0.84),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: HabitBetTheme.inkSoft),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(color: HabitBetTheme.inkSoft),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DecisionTheme {
+  const _DecisionTheme({required this.background, required this.foreground});
+
+  final Color background;
+  final Color foreground;
+
+  factory _DecisionTheme.fromDecision(ArbitrationDecision decision) {
+    return switch (decision) {
+      ArbitrationDecision.pending => _DecisionTheme(
+        background: const Color(0xFFF8E9C9),
+        foreground: HabitBetTheme.accent,
+      ),
+      ArbitrationDecision.approved => _DecisionTheme(
+        background: HabitBetTheme.primary.withValues(alpha: 0.18),
+        foreground: HabitBetTheme.success,
+      ),
+      ArbitrationDecision.rejected => _DecisionTheme(
+        background: HabitBetTheme.danger.withValues(alpha: 0.14),
+        foreground: HabitBetTheme.danger,
+      ),
+    };
   }
 }
 
@@ -190,19 +298,32 @@ class _ArbitrationMessage extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 48),
-            const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: HabitBetTheme.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Icon(icon, color: HabitBetTheme.success, size: 34),
+                ),
+                const SizedBox(height: 16),
+                Text(title, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

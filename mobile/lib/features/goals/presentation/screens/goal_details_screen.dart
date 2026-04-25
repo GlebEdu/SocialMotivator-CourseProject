@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_theme.dart';
+import '../../../../app/widgets/brand_backdrop.dart';
+import '../../../../app/widgets/glowing_gradient_panel.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bets/presentation/providers/bets_provider.dart';
 import '../../../bets/presentation/widgets/bet_panel.dart';
@@ -21,56 +24,59 @@ class GoalDetailsScreen extends ConsumerWidget {
     final goalAsync = ref.watch(goalDetailsProvider(goalId));
     final currentUser = ref.watch(currentAuthenticatedUserProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              context.pop();
-            } else {
-              context.go('/my-goals');
-            }
-          },
+    return BrandBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.of(context).canPop()) {
+                context.pop();
+              } else {
+                context.go('/my-goals');
+              }
+            },
+          ),
+          title: const Text('Детали цели'),
         ),
-        title: const Text('Детали цели'),
-      ),
-      body: goalAsync.when(
-        data: (goal) {
-          if (goal == null) {
-            return _GoalDetailsMessage(
-              icon: Icons.search_off_outlined,
-              title: 'Цель не найдена',
-              description: 'Эта цель больше недоступна.',
+        body: goalAsync.when(
+          data: (goal) {
+            if (goal == null) {
+              return _GoalDetailsMessage(
+                icon: Icons.search_off_outlined,
+                title: 'Цель не найдена',
+                description: 'Эта цель больше недоступна.',
+              );
+            }
+
+            final showAuthorSummary =
+                currentUser == null || currentUser.id != goal.userId;
+            final authorSummary = showAuthorSummary
+                ? ref.watch(userGoalSummaryProvider(goal.userId))
+                : const AsyncData<UserGoalSummary?>(null);
+            final betSummary = ref.watch(goalBetSummaryProvider(goal.id));
+            final showBetPanel =
+                currentUser == null || currentUser.id != goal.userId;
+            final canSubmitEvidence =
+                currentUser != null &&
+                currentUser.id == goal.userId &&
+                goal.status == GoalStatus.active;
+
+            return _GoalDetailsBody(
+              goal: goal,
+              authorSummary: authorSummary,
+              betSummary: betSummary,
+              showBetPanel: showBetPanel,
+              canSubmitEvidence: canSubmitEvidence,
             );
-          }
-
-          final showAuthorSummary =
-              currentUser == null || currentUser.id != goal.userId;
-          final authorSummary = showAuthorSummary
-              ? ref.watch(userGoalSummaryProvider(goal.userId))
-              : const AsyncData<UserGoalSummary?>(null);
-          final betSummary = ref.watch(goalBetSummaryProvider(goal.id));
-          final showBetPanel =
-              currentUser == null || currentUser.id != goal.userId;
-          final canSubmitEvidence =
-              currentUser != null &&
-              currentUser.id == goal.userId &&
-              goal.status == GoalStatus.active;
-
-          return _GoalDetailsBody(
-            goal: goal,
-            authorSummary: authorSummary,
-            betSummary: betSummary,
-            showBetPanel: showBetPanel,
-            canSubmitEvidence: canSubmitEvidence,
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _GoalDetailsMessage(
-          icon: Icons.error_outline,
-          title: 'Не удалось загрузить цель',
-          description: error.toString(),
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _GoalDetailsMessage(
+            icon: Icons.error_outline,
+            title: 'Не удалось загрузить цель',
+            description: error.toString(),
+          ),
         ),
       ),
     );
@@ -101,31 +107,58 @@ class _GoalDetailsBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: <Widget>[
-        Text(goal.title, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        _GoalStatusBanner(status: goal.status),
-        const SizedBox(height: 16),
-        AuthorSummaryCard(authorSummary: authorSummary),
-        const SizedBox(height: 16),
-        Text(goal.description, style: Theme.of(context).textTheme.bodyLarge),
-        const SizedBox(height: 24),
-        Card(
-          child: ListTile(
-            leading: const Icon(Icons.event_outlined),
-            title: const Text('Срок'),
-            subtitle: Text(deadlineText),
+        GlowingGradientPanel(
+          radius: 28,
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      goal.title,
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _GoalStatusBanner(status: goal.status),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                goal.description,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.82),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: <Widget>[
+                  _HeroPill(icon: Icons.event_outlined, label: deadlineText),
+                ],
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 16),
-        _GoalBetSummaryCard(betSummary: betSummary),
         if (canSubmitEvidence) ...<Widget>[
-          const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: () => context.push('/goals/${goal.id}/evidence'),
             icon: const Icon(Icons.upload_file_outlined),
             label: const Text('Отправить доказательство'),
           ),
+          const SizedBox(height: 16),
         ],
+        AuthorSummaryCard(authorSummary: authorSummary),
+        const SizedBox(height: 16),
+        _GoalBetSummaryCard(betSummary: betSummary),
         if (showBetPanel) ...<Widget>[
           const SizedBox(height: 16),
           BetPanel(goal: goal),
@@ -174,6 +207,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                           child: _GoalDetailsMetricCard(
                             label: 'Общий банк',
                             value: _coins(summary.totalPool),
+                            indicatorColor: HabitBetTheme.primary,
                           ),
                         ),
                         SizedBox(
@@ -181,6 +215,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                           child: _GoalDetailsMetricCard(
                             label: 'Ставок',
                             value: summary.goalBetsCount.toString(),
+                            indicatorColor: HabitBetTheme.primary,
                           ),
                         ),
                         SizedBox(
@@ -188,6 +223,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                           child: _GoalDetailsMetricCard(
                             label: 'За выполнение',
                             value: _coins(summary.forPool),
+                            indicatorColor: HabitBetTheme.success,
                           ),
                         ),
                         SizedBox(
@@ -195,6 +231,7 @@ class _GoalBetSummaryCard extends StatelessWidget {
                           child: _GoalDetailsMetricCard(
                             label: 'Против выполнения',
                             value: _coins(summary.againstPool),
+                            indicatorColor: HabitBetTheme.danger,
                           ),
                         ),
                       ],
@@ -205,9 +242,18 @@ class _GoalBetSummaryCard extends StatelessWidget {
                 if (summary.hasCurrentUserBet)
                   _CurrentUserBetSummary(summary: summary)
                 else
-                  Text(
-                    'Вы ещё не сделали ставку на эту цель.',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: HabitBetTheme.surfaceAlt),
+                    ),
+                    child: Text(
+                      'Вы ещё не сделали ставку на эту цель.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
               ],
             ),
@@ -264,26 +310,42 @@ class _CurrentUserBetSummary extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            HabitBetTheme.primary.withValues(alpha: 0.18),
+            Colors.white,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: HabitBetTheme.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            predictionLabel,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            'ВАША ПОЗИЦИЯ',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: HabitBetTheme.inkSoft,
+              letterSpacing: 0.8,
             ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            predictionLabel,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: HabitBetTheme.ink),
           ),
           const SizedBox(height: 4),
           Text(
             detailLabel,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: HabitBetTheme.inkSoft),
           ),
         ],
       ),
@@ -292,25 +354,78 @@ class _CurrentUserBetSummary extends StatelessWidget {
 }
 
 class _GoalDetailsMetricCard extends StatelessWidget {
-  const _GoalDetailsMetricCard({required this.label, required this.value});
+  const _GoalDetailsMetricCard({
+    required this.label,
+    required this.value,
+    required this.indicatorColor,
+  });
 
   final String label;
   final String value;
+  final Color indicatorColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: HabitBetTheme.surfaceAlt),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(value, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 4),
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: indicatorColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
           Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 18, color: Colors.white),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -325,10 +440,22 @@ class _GoalStatusBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (backgroundColor, foregroundColor) = switch (status) {
-      GoalStatus.inReview => (Colors.amber.shade100, Colors.amber.shade900),
-      GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
-      GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
-      GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
+      GoalStatus.inReview => (
+        HabitBetTheme.accent.withValues(alpha: 0.22),
+        HabitBetTheme.accent,
+      ),
+      GoalStatus.active => (
+        HabitBetTheme.success.withValues(alpha: 0.22),
+        HabitBetTheme.success,
+      ),
+      GoalStatus.completed => (
+        HabitBetTheme.primary.withValues(alpha: 0.22),
+        HabitBetTheme.primary,
+      ),
+      GoalStatus.failed => (
+        HabitBetTheme.danger.withValues(alpha: 0.22),
+        HabitBetTheme.danger,
+      ),
     };
 
     return Chip(

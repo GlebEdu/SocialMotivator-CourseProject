@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_theme.dart';
+import '../../../../app/widgets/brand_backdrop.dart';
+
 class HomeShell extends StatelessWidget {
   const HomeShell({required this.currentTab, required this.child, super.key});
 
@@ -10,22 +13,38 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentIndex = homeTabs.indexWhere((tab) => tab.item == currentTab);
-    final selectedTab = homeTabs[currentIndex];
 
-    return Scaffold(
-      appBar: AppBar(title: Text(_titleForTab(selectedTab.item))),
-      body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: currentIndex,
-        onDestinationSelected: (index) => context.go(homeTabs[index].route),
-        destinations: homeTabs
-            .map(
-              (tab) => NavigationDestination(
-                icon: Icon(tab.icon),
-                label: _labelForTab(tab.item),
+    return BrandBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: child,
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: HabitBetTheme.surface.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(34),
+              border: Border.all(color: HabitBetTheme.line),
+              boxShadow: HabitBetTheme.softShadow(),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(34),
+              child: NavigationBar(
+                selectedIndex: currentIndex,
+                onDestinationSelected: (index) =>
+                    context.go(homeTabs[index].route),
+                destinations: homeTabs
+                    .map(
+                      (tab) => NavigationDestination(
+                        icon: Icon(tab.icon),
+                        label: _labelForTab(tab.item),
+                      ),
+                    )
+                    .toList(growable: false),
               ),
-            )
-            .toList(growable: false),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -71,8 +90,4 @@ String _labelForTab(HomeTabItem item) {
     HomeTabItem.arbitration => 'Арбитраж',
     HomeTabItem.profile => 'Профиль',
   };
-}
-
-String _titleForTab(HomeTabItem item) {
-  return _labelForTab(item);
 }

@@ -11,6 +11,7 @@ from app.models.arbitration import ArbitrationAssignment, ArbitrationCase, Arbit
 from app.models.bet import Bet
 from app.models.enums import ArbitrationDecision, GoalStatus
 from app.models.goal import Goal
+from app.models.user import User
 from app.schemas.arbitration import (
     ArbitrationAssignmentDto,
     ArbitrationCaseDetailsDto,

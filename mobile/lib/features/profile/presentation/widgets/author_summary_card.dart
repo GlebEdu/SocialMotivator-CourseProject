@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/app_theme.dart';
 import '../providers/profile_provider.dart';
 
 class AuthorSummaryCard extends StatelessWidget {
@@ -27,29 +28,48 @@ class AuthorSummaryCard extends StatelessWidget {
             : summary.user.displayName[0].toUpperCase();
 
         return Card(
+          clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text('Автор', style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 12),
+                Text(
+                  'Обзор автора',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: HabitBetTheme.primary,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 14),
                 Row(
                   children: <Widget>[
-                    CircleAvatar(child: Text(initial)),
-                    const SizedBox(width: 12),
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: HabitBetTheme.primary.withValues(
+                        alpha: 0.18,
+                      ),
+                      foregroundColor: HabitBetTheme.ink,
+                      child: Text(
+                        initial,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
                             summary.user.displayName,
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Рейтинг ${summary.user.rating}',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(color: HabitBetTheme.inkSoft),
                           ),
                         ],
                       ),
@@ -71,6 +91,8 @@ class AuthorSummaryCard extends StatelessWidget {
                             label: 'Выполнено',
                             value:
                                 '${summary.completedGoals}/${summary.totalGoals} целей',
+                            icon: Icons.check_circle_outline,
+                            color: HabitBetTheme.primary,
                           ),
                         ),
                         SizedBox(
@@ -78,6 +100,8 @@ class AuthorSummaryCard extends StatelessWidget {
                           child: _AuthorMetricCard(
                             label: 'Активные цели',
                             value: summary.activeGoals.toString(),
+                            icon: Icons.flash_on_outlined,
+                            color: HabitBetTheme.primary,
                           ),
                         ),
                       ],
@@ -87,7 +111,9 @@ class AuthorSummaryCard extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'Процент выполнения: ${_completionRateLabel(summary.completionRateLabel)}',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: HabitBetTheme.inkSoft),
                 ),
                 if (showViewProfile) ...<Widget>[
                   const SizedBox(height: 8),
@@ -132,27 +158,39 @@ class AuthorSummaryCard extends StatelessWidget {
   }
 
   String _completionRateLabel(String value) {
-    return value == 'No results yet' ? 'Пока нет результатов' : value;
+    return value == 'No results yet' || value == 'Пока нет результатов'
+        ? '-'
+        : value;
   }
 }
 
 class _AuthorMetricCard extends StatelessWidget {
-  const _AuthorMetricCard({required this.label, required this.value});
+  const _AuthorMetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
 
   final String label;
   final String value;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(16),
+        color: HabitBetTheme.surface.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: HabitBetTheme.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 16),
           Text(value, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(label, style: Theme.of(context).textTheme.bodySmall),

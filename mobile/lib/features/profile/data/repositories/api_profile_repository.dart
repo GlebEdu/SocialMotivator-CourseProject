@@ -25,7 +25,7 @@ class ApiProfileRepository implements ProfileRepository {
   @override
   Future<List<User>> getProfiles() {
     throw UnsupportedError(
-      'Listing all profiles is not available via the mobile API.',
+      'Список всех профилей недоступен через мобильное API.',
     );
   }
 
@@ -37,7 +37,7 @@ class ApiProfileRepository implements ProfileRepository {
   @override
   Future<User> updateUser(User user) {
     throw UnsupportedError(
-      'Profile updates are not available via the mobile API.',
+      'Обновление профиля недоступно через мобильное API.',
     );
   }
 }

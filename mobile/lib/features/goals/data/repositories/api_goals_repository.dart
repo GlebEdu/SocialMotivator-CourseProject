@@ -149,9 +149,7 @@ class ApiGoalsRepository implements GoalsRepository {
     required String goalId,
     required GoalStatus status,
   }) {
-    throw UnsupportedError(
-      'Goal status updates are managed by backend arbitration.',
-    );
+    throw UnsupportedError('Статус цели обновляется сервером через арбитраж.');
   }
 
   Map<String, dynamic> _asMap(Object? value) {

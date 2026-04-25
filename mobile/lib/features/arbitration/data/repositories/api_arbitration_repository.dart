@@ -92,7 +92,7 @@ class ApiArbitrationRepository implements ArbitrationRepository {
     ArbitrationCase arbitrationCase,
   ) {
     throw UnsupportedError(
-      'Arbitration cases are created by backend evidence submission.',
+      'Дела арбитража создаются сервером после отправки доказательства.',
     );
   }
 
@@ -117,7 +117,7 @@ class ApiArbitrationRepository implements ArbitrationRepository {
     ArbitrationCase arbitrationCase,
   ) {
     throw UnsupportedError(
-      'Arbitration case updates are resolved by backend voting.',
+      'Обновление дел арбитража выполняется сервером по итогам голосования.',
     );
   }
 }

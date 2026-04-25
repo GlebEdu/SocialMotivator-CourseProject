@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/app_theme.dart';
 import '../../../bets/domain/entities/bet_side.dart';
 import '../../../bets/domain/entities/place_bet_input.dart';
 import '../../../goals/domain/entities/goal.dart';
@@ -59,16 +60,24 @@ class _BetPanelState extends ConsumerState<BetPanel> {
     final isBettingOpen = widget.goal.status.name == 'active';
 
     return Card(
+      clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
               'Сделать ставку',
-              style: Theme.of(context).textTheme.titleMedium,
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            Text(
+              'Выберите сторону и сумму, чтобы зафиксировать свою позицию по этой цели.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: HabitBetTheme.inkSoft),
+            ),
+            const SizedBox(height: 18),
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(
@@ -76,27 +85,27 @@ class _BetPanelState extends ConsumerState<BetPanel> {
               ),
               decoration: const InputDecoration(
                 labelText: 'Сумма ставки',
-                prefixText: 'Монеты ',
+                prefixText: 'Монеты  ',
               ),
             ),
             const SizedBox(height: 16),
             if (!isBettingOpen)
-              Text(
-                'Ставки доступны только для активных целей.',
-                style: Theme.of(context).textTheme.bodySmall,
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: HabitBetTheme.surfaceAlt,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Text(
+                  'Ставки доступны только для активных целей.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: HabitBetTheme.inkSoft,
+                  ),
+                ),
               )
             else
               Row(
                 children: <Widget>[
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: betState.isLoading
-                          ? null
-                          : () => _submitBet(BetSide.againstGoal),
-                      child: const Text('Против'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: FilledButton(
                       onPressed: betState.isLoading
@@ -108,7 +117,37 @@ class _BetPanelState extends ConsumerState<BetPanel> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('За'),
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                Icon(Icons.trending_up_rounded),
+                                SizedBox(width: 8),
+                                Text('За'),
+                              ],
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: HabitBetTheme.danger,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: HabitBetTheme.danger
+                            .withValues(alpha: 0.4),
+                        disabledForegroundColor: Colors.white70,
+                      ),
+                      onPressed: betState.isLoading
+                          ? null
+                          : () => _submitBet(BetSide.againstGoal),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Icon(Icons.trending_down_rounded),
+                          SizedBox(width: 8),
+                          Text('Против'),
+                        ],
+                      ),
                     ),
                   ),
                 ],

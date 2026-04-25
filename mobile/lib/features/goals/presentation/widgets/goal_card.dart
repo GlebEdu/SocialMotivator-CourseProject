@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/app_theme.dart';
 import '../../domain/entities/goal.dart';
 import '../../domain/entities/goal_status.dart';
 
@@ -8,72 +9,89 @@ class GoalCard extends StatelessWidget {
     required this.goal,
     this.onTap,
     this.badges = const <GoalCardBadge>[],
+    this.metrics = const <GoalCardMetric>[],
     super.key,
   });
 
   final Goal goal;
   final VoidCallback? onTap;
   final List<GoalCardBadge> badges;
+  final List<GoalCardMetric> metrics;
 
   @override
   Widget build(BuildContext context) {
     final deadlineText = goal.deadline == null
         ? 'Без срока'
         : _formatDate(goal.deadline!);
+    final statusTheme = _GoalStatusTheme.fromStatus(goal.status);
 
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: _borderGradient(statusTheme.foreground),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: <BoxShadow>[
+          ...HabitBetTheme.softShadow(),
+          BoxShadow(
+            color: statusTheme.foreground.withValues(alpha: 0.12),
+            blurRadius: 20,
+            spreadRadius: -8,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(1.2, 4.2, 1.2, 1.2),
+        child: Material(
+          color: HabitBetTheme.surface.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(27),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(27),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      goal.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          goal.title,
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      _GoalStatusChip(status: goal.status),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    goal.description,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: HabitBetTheme.inkSoft,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _GoalStatusChip(status: goal.status),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                goal.description,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (badges.isNotEmpty) ...<Widget>[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: badges
-                      .map((badge) => _GoalCardBadgeChip(badge: badge))
-                      .toList(growable: false),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: <Widget>[
-                  const Icon(Icons.event_outlined, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      deadlineText,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      _FooterChip(
+                        icon: Icons.calendar_today_outlined,
+                        label: deadlineText,
+                      ),
+                      ...badges.map(
+                        (badge) => _GoalCardBadgeChip(badge: badge),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -84,6 +102,20 @@ class GoalCard extends StatelessWidget {
     final month = value.month.toString().padLeft(2, '0');
     final day = value.day.toString().padLeft(2, '0');
     return '$day.$month.${value.year}';
+  }
+
+  LinearGradient _borderGradient(Color color) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: <Color>[
+        color.withValues(alpha: 0.9),
+        color.withValues(alpha: 0.42),
+        color.withValues(alpha: 0.18),
+        color.withValues(alpha: 0.38),
+      ],
+      stops: const <double>[0, 0.18, 0.7, 1],
+    );
   }
 }
 
@@ -101,6 +133,20 @@ class GoalCardBadge {
   final Color? foregroundColor;
 }
 
+class GoalCardMetric {
+  const GoalCardMetric({
+    required this.label,
+    required this.value,
+    this.backgroundColor,
+    this.foregroundColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+}
+
 class _GoalStatusChip extends StatelessWidget {
   const _GoalStatusChip({required this.status});
 
@@ -108,24 +154,19 @@ class _GoalStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (backgroundColor, foregroundColor) = switch (status) {
-      GoalStatus.inReview => (Colors.amber.shade100, Colors.amber.shade900),
-      GoalStatus.active => (Colors.green.shade100, Colors.green.shade900),
-      GoalStatus.completed => (Colors.grey.shade300, Colors.grey.shade800),
-      GoalStatus.failed => (Colors.red.shade100, Colors.red.shade900),
-    };
+    final theme = _GoalStatusTheme.fromStatus(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: theme.background,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         _labelForStatus(status),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: foregroundColor,
-          fontWeight: FontWeight.w600,
+          color: theme.foreground,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -152,11 +193,12 @@ class _GoalCardBadgeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = badge.backgroundColor ?? Colors.blue.shade100;
-    final foregroundColor = badge.foregroundColor ?? Colors.blue.shade900;
+    final backgroundColor =
+        badge.backgroundColor ?? HabitBetTheme.primary.withValues(alpha: 0.16);
+    final foregroundColor = badge.foregroundColor ?? HabitBetTheme.success;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(999),
@@ -172,11 +214,71 @@ class _GoalCardBadgeChip extends StatelessWidget {
             badge.label,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: foregroundColor,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _FooterChip extends StatelessWidget {
+  const _FooterChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: HabitBetTheme.surfaceAlt.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: HabitBetTheme.inkSoft),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: HabitBetTheme.inkSoft,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalStatusTheme {
+  const _GoalStatusTheme({required this.background, required this.foreground});
+
+  final Color background;
+  final Color foreground;
+
+  factory _GoalStatusTheme.fromStatus(GoalStatus status) {
+    return switch (status) {
+      GoalStatus.inReview => _GoalStatusTheme(
+        background: const Color(0xFFF8E9C9),
+        foreground: HabitBetTheme.accent,
+      ),
+      GoalStatus.active => _GoalStatusTheme(
+        background: HabitBetTheme.primary.withValues(alpha: 0.18),
+        foreground: HabitBetTheme.success,
+      ),
+      GoalStatus.completed => _GoalStatusTheme(
+        background: HabitBetTheme.primary.withValues(alpha: 0.18),
+        foreground: HabitBetTheme.primary,
+      ),
+      GoalStatus.failed => _GoalStatusTheme(
+        background: HabitBetTheme.danger.withValues(alpha: 0.14),
+        foreground: HabitBetTheme.danger,
+      ),
+    };
   }
 }

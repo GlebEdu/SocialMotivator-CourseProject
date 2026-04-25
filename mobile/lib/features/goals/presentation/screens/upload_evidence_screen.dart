@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/widgets/brand_backdrop.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/evidence_attachment.dart';
 import '../providers/goals_provider.dart';
@@ -50,103 +51,110 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
     final currentUser = ref.watch(currentAuthenticatedUserProvider);
     final submitState = ref.watch(submitEvidenceControllerProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Загрузка доказательства')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Файлы доказательства',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _attachments.isEmpty
-                        ? 'Выберите одну или несколько фотографий или видео на устройстве.'
-                        : _attachmentsStatus(),
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  _EvidenceAttachmentsPreviewList(
-                    attachments: _attachments,
-                    onRemove: submitState.isLoading
-                        ? null
-                        : (index) {
-                            setState(() {
-                              _attachments.removeAt(index);
-                            });
-                          },
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: <Widget>[
-                      OutlinedButton.icon(
-                        onPressed: submitState.isLoading ? null : _pickPhoto,
-                        icon: const Icon(Icons.photo_library_outlined),
-                        label: const Text('Добавить фото'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: submitState.isLoading ? null : _pickVideo,
-                        icon: const Icon(Icons.video_library_outlined),
-                        label: const Text('Добавить видео'),
-                      ),
-                      if (_attachments.isNotEmpty)
-                        TextButton.icon(
+    return BrandBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: const Text('Загрузка доказательства')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: <Widget>[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Файлы доказательства',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _attachments.isEmpty
+                          ? 'Выберите фото или видео из галереи или снимите их на камеру.'
+                          : _attachmentsStatus(),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    _EvidenceAttachmentsPreviewList(
+                      attachments: _attachments,
+                      onRemove: submitState.isLoading
+                          ? null
+                          : (index) {
+                              setState(() {
+                                _attachments.removeAt(index);
+                              });
+                            },
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: <Widget>[
+                        OutlinedButton.icon(
                           onPressed: submitState.isLoading
                               ? null
-                              : () {
-                                  setState(() {
-                                    _attachments.clear();
-                                  });
-                                },
-                          icon: const Icon(Icons.close),
-                          label: const Text('Удалить всё'),
+                              : _showPhotoSourcePicker,
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: const Text('Добавить фото'),
                         ),
-                    ],
-                  ),
-                ],
+                        OutlinedButton.icon(
+                          onPressed: submitState.isLoading
+                              ? null
+                              : _showVideoSourcePicker,
+                          icon: const Icon(Icons.video_library_outlined),
+                          label: const Text('Добавить видео'),
+                        ),
+                        if (_attachments.isNotEmpty)
+                          TextButton.icon(
+                            onPressed: submitState.isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _attachments.clear();
+                                    });
+                                  },
+                            icon: const Icon(Icons.close),
+                            label: const Text('Удалить всё'),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _descriptionController,
-            textCapitalization: TextCapitalization.sentences,
-            minLines: 1,
-            maxLines: 6,
-            decoration: const InputDecoration(
-              labelText: 'Комментарий о выполнении',
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              textCapitalization: TextCapitalization.sentences,
+              minLines: 1,
+              maxLines: 6,
+              decoration: const InputDecoration(
+                labelText: 'Комментарий о выполнении',
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: submitState.isLoading || currentUser == null
-                ? null
-                : _submit,
-            child: submitState.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Отправить доказательство'),
-          ),
-          if (currentUser == null) ...<Widget>[
-            const SizedBox(height: 12),
-            Text(
-              'Войдите, чтобы отправить доказательство.',
-              style: Theme.of(context).textTheme.bodySmall,
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: submitState.isLoading || currentUser == null
+                  ? null
+                  : _submit,
+              child: submitState.isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Отправить доказательство'),
             ),
+            if (currentUser == null) ...<Widget>[
+              const SizedBox(height: 12),
+              Text(
+                'Войдите, чтобы отправить доказательство.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -194,9 +202,73 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
     }
   }
 
-  Future<void> _pickPhoto() async {
+  Future<void> _showPhotoSourcePicker() async {
+    final source = await _showSourcePickerSheet(
+      title: 'Добавить фото',
+      galleryLabel: 'Выбрать из галереи',
+      cameraLabel: 'Сделать фото',
+      galleryIcon: Icons.photo_library_outlined,
+      cameraIcon: Icons.photo_camera_outlined,
+    );
+    if (source == null) {
+      return;
+    }
+
+    await _pickPhoto(source);
+  }
+
+  Future<void> _showVideoSourcePicker() async {
+    final source = await _showSourcePickerSheet(
+      title: 'Добавить видео',
+      galleryLabel: 'Выбрать из галереи',
+      cameraLabel: 'Снять видео',
+      galleryIcon: Icons.video_library_outlined,
+      cameraIcon: Icons.videocam_outlined,
+    );
+    if (source == null) {
+      return;
+    }
+
+    await _pickVideo(source);
+  }
+
+  Future<ImageSource?> _showSourcePickerSheet({
+    required String title,
+    required String galleryLabel,
+    required String cameraLabel,
+    required IconData galleryIcon,
+    required IconData cameraIcon,
+  }) {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(title: Text(title)),
+              ListTile(
+                leading: Icon(galleryIcon),
+                title: Text(galleryLabel),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+              ListTile(
+                leading: Icon(cameraIcon),
+                title: Text(cameraLabel),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
     try {
-      final files = await _picker.pickMultiImage();
+      final files = source == ImageSource.gallery
+          ? await _picker.pickMultiImage()
+          : await _pickSinglePhotoFromCamera();
       if (files.isEmpty || !mounted) {
         return;
       }
@@ -207,9 +279,18 @@ class _UploadEvidenceScreenState extends ConsumerState<UploadEvidenceScreen> {
     }
   }
 
-  Future<void> _pickVideo() async {
+  Future<List<XFile>> _pickSinglePhotoFromCamera() async {
+    final file = await _picker.pickImage(source: ImageSource.camera);
+    if (file == null) {
+      return const <XFile>[];
+    }
+
+    return <XFile>[file];
+  }
+
+  Future<void> _pickVideo(ImageSource source) async {
     try {
-      final file = await _picker.pickVideo(source: ImageSource.gallery);
+      final file = await _picker.pickVideo(source: source);
       if (file == null || !mounted) {
         return;
       }

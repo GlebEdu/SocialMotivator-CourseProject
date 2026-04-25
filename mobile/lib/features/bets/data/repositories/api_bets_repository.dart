@@ -14,10 +14,7 @@ class ApiBetsRepository implements BetsRepository {
   Future<Bet> placeBet(PlaceBetInput input) async {
     final payload = await _apiClient.postJson(
       '/goals/${input.goalId}/bets',
-      body: <String, dynamic>{
-        'side': input.side.name,
-        'amount': input.amount,
-      },
+      body: <String, dynamic>{'side': input.side.name, 'amount': input.amount},
     );
     return PlaceBetResponseModel.fromJson(payload).bet;
   }
